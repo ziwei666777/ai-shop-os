@@ -130,11 +130,53 @@ def build_html(hero_data_url: str) -> str:
     .feature-list, .metric-grid {{ display: grid; gap: 14px; }}
     .panel {{ padding: 24px; color: #334155; line-height: 1.75; }}
     .agent-dot {{ width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, var(--primary), var(--blue)); }}
-    .demo-board {{ margin-top: 42px; overflow: hidden; }}
-    .demo-row {{ display: grid; grid-template-columns: 170px 1fr 1.2fr; gap: 20px; padding: 22px 26px; border-bottom: 1px solid var(--line); }}
-    .demo-row:last-child {{ border-bottom: 0; }}
-    .demo-row span {{ color: #334155; }}
-    .demo-row p {{ color: var(--muted); }}
+    .demo-shell {{
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 18px;
+      margin-top: 42px;
+    }}
+    .demo-tabs {{ display: grid; gap: 10px; align-content: start; }}
+    .demo-tab {{
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: white;
+      padding: 16px 18px;
+      color: #334155;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }}
+    .demo-tab.active {{
+      border-color: #0f172a;
+      background: #0f172a;
+      color: white;
+      box-shadow: 0 18px 40px rgb(15 23 42 / .16);
+    }}
+    .demo-panel {{ display: none; padding: 28px; }}
+    .demo-panel.active {{ display: block; }}
+    .demo-panel header {{ display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; }}
+    .demo-panel h3 {{ font-size: 30px; line-height: 1.2; }}
+    .demo-panel header p {{ max-width: 680px; margin-top: 14px; color: var(--muted); line-height: 1.75; }}
+    .badge {{
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      background: #ecfdf5;
+      color: #047857;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }}
+    .badge.warn {{ background: #fffbeb; color: #b45309; }}
+    .demo-cards {{ display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 28px; }}
+    .demo-card {{ border: 1px solid var(--line); border-radius: 10px; background: #f8fafc; padding: 18px; }}
+    .demo-card small {{ color: var(--muted); font-weight: 700; }}
+    .demo-card p {{ margin-top: 12px; color: #172033; line-height: 1.65; }}
+    .demo-flow {{ display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }}
+    .demo-flow span {{ border: 1px solid var(--line); border-radius: 999px; background: white; padding: 10px 12px; color: #475569; font-size: 13px; }}
     .step {{ padding: 22px; }}
     .step b {{ display: inline-flex; width: 38px; height: 38px; align-items: center; justify-content: center; border-radius: 10px; background: var(--soft); color: var(--primary); }}
     .step p {{ margin-top: 22px; color: var(--muted); line-height: 1.7; }}
@@ -146,7 +188,11 @@ def build_html(hero_data_url: str) -> str:
     @media (max-width: 980px) {{
       .nav-links {{ display: none; }}
       .cost-grid, .agent-grid, .steps, .split, .metric-grid {{ grid-template-columns: 1fr; }}
-      .demo-row {{ grid-template-columns: 1fr; }}
+      .demo-shell {{ grid-template-columns: 1fr; }}
+      .demo-tabs {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
+      .demo-cards {{ grid-template-columns: 1fr; }}
+      .demo-panel header {{ display: block; }}
+      .badge {{ margin-top: 16px; }}
       .hero-inner {{ padding-top: 82px; }}
     }}
   </style>
@@ -226,11 +272,77 @@ def build_html(hero_data_url: str) -> str:
           <h2>演示界面：看 AI 如何工作，而不是只看概念</h2>
           <p>演示数据为静态样例，用来说明产品流程。真实上线后会接入商家订单、客户、售后和运营数据。</p>
         </div>
-        <div class="panel demo-board">
-          <div class="demo-row"><strong>客户咨询</strong><span>这件外套今天下单什么时候发？</span><p>AI 判断为物流低风险，生成回复草稿。</p></div>
-          <div class="demo-row"><strong>售后投诉</strong><span>物流超时，客户要求赔偿。</span><p>AI 标记高风险，必须老板审批。</p></div>
-          <div class="demo-row"><strong>运营线索</strong><span>7 天内多次咨询尺码和发货。</span><p>AI 生成私域引导话术和投流草稿。</p></div>
-          <div class="demo-row"><strong>老板审批</strong><span>退款、赔偿、预算、群发。</span><p>统一进入审批，记录决策依据。</p></div>
+        <div class="demo-shell">
+          <div class="demo-tabs" aria-label="演示模块切换">
+            <button class="demo-tab active" type="button" data-demo-tab="customer">AI 客服</button>
+            <button class="demo-tab" type="button" data-demo-tab="after-sale">AI 售后</button>
+            <button class="demo-tab" type="button" data-demo-tab="operation">AI 运营</button>
+            <button class="demo-tab" type="button" data-demo-tab="approval">老板审批</button>
+          </div>
+
+          <div class="panel demo-panel active" data-demo-panel="customer">
+            <header>
+              <div>
+                <h3>AI 客服工作台</h3>
+                <p>客户消息进入收件箱后，AI 先判断问题类型和风险等级。FAQ、订单、物流类低风险问题可以生成回复草稿；不会的问题必须暂停并交给人工。</p>
+              </div>
+              <span class="badge">低风险可自动</span>
+            </header>
+            <div class="demo-cards">
+              <div class="demo-card"><small>客户消息</small><p>这件外套今天下单什么时候发？能不能帮我催一下？</p></div>
+              <div class="demo-card"><small>AI 草稿</small><p>您好，这款商品当前正常发货。今天 18:00 前付款预计当天出库，物流揽收后我会继续跟进。</p></div>
+              <div class="demo-card"><small>学习动作</small><p>客服修改话术后，系统记录为学习事件，后续相同问题优先复用。</p></div>
+            </div>
+            <div class="demo-flow"><span>消息进入</span><span>风险判断</span><span>生成草稿</span><span>人工确认</span><span>写入学习</span></div>
+          </div>
+
+          <div class="panel demo-panel" data-demo-panel="after-sale">
+            <header>
+              <div>
+                <h3>AI 售后风险分级</h3>
+                <p>系统把退款、退货、物流异常、投诉、赔偿统一变成售后 case。AI 只给判断和建议，高风险动作必须由老板或客服主管审批。</p>
+              </div>
+              <span class="badge warn">高风险必须审批</span>
+            </header>
+            <div class="demo-cards">
+              <div class="demo-card"><small>售后类型</small><p>客户投诉物流超时，并要求赔偿 20 元优惠券。</p></div>
+              <div class="demo-card"><small>AI 判断</small><p>物流责任待核实，涉及赔偿金额，标记为高风险，不允许自动承诺。</p></div>
+              <div class="demo-card"><small>处理建议</small><p>先查询物流轨迹，再给老板审批：同意补偿、拒绝补偿或补充证据。</p></div>
+            </div>
+            <div class="demo-flow"><span>识别售后</span><span>判断责任</span><span>风险分级</span><span>审批建议</span><span>SOP 沉淀</span></div>
+          </div>
+
+          <div class="panel demo-panel" data-demo-panel="operation">
+            <header>
+              <div>
+                <h3>AI 运营计划草稿</h3>
+                <p>AI 运营不直接花钱，而是从客户咨询、订单和售后数据中找机会，生成私域获客话术、活动建议和投流计划草稿。</p>
+              </div>
+              <span class="badge">预算动作需审批</span>
+            </header>
+            <div class="demo-cards">
+              <div class="demo-card"><small>发现机会</small><p>近 7 天多名客户反复咨询尺码、发货速度和搭配建议。</p></div>
+              <div class="demo-card"><small>运营建议</small><p>生成“尺码顾问 + 快速发货”私域话术，并推荐小预算测试短视频素材。</p></div>
+              <div class="demo-card"><small>老板边界</small><p>优惠、群发、投流预算必须审批，AI 只提交计划和理由。</p></div>
+            </div>
+            <div class="demo-flow"><span>识别线索</span><span>生成话术</span><span>形成投流草稿</span><span>老板审批</span><span>复盘效果</span></div>
+          </div>
+
+          <div class="panel demo-panel" data-demo-panel="approval">
+            <header>
+              <div>
+                <h3>老板统一审批中心</h3>
+                <p>所有退款、赔偿、预算、群发、客户数据导出等动作统一进入审批。老板看到的是 AI 给出的原因、风险和建议动作。</p>
+              </div>
+              <span class="badge warn">老板最终决定</span>
+            </header>
+            <div class="demo-cards">
+              <div class="demo-card"><small>审批事项</small><p>物流投诉补偿 20 元优惠券，AI 建议先核实轨迹后再处理。</p></div>
+              <div class="demo-card"><small>决策选项</small><p>同意、修改、拒绝、要求补充信息。</p></div>
+              <div class="demo-card"><small>长期学习</small><p>老板最终处理结果写入 Memory 和 SOP，下次相似场景直接参考。</p></div>
+            </div>
+            <div class="demo-flow"><span>AI 建议</span><span>风险说明</span><span>老板审批</span><span>执行记录</span><span>经验沉淀</span></div>
+          </div>
         </div>
       </div>
     </section>
@@ -278,6 +390,15 @@ def build_html(hero_data_url: str) -> str:
       <a class="button" href="#demo">查看演示流程</a>
     </section>
   </main>
+  <script>
+    document.querySelectorAll("[data-demo-tab]").forEach((button) => {{
+      button.addEventListener("click", () => {{
+        const target = button.getAttribute("data-demo-tab");
+        document.querySelectorAll("[data-demo-tab]").forEach((tab) => tab.classList.toggle("active", tab === button));
+        document.querySelectorAll("[data-demo-panel]").forEach((panel) => panel.classList.toggle("active", panel.getAttribute("data-demo-panel") === target));
+      }});
+    }});
+  </script>
 </body>
 </html>"""
 
