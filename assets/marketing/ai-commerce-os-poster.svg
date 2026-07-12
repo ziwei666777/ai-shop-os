@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="45%" stop-color="#eef6ff"/>
+      <stop offset="100%" stop-color="#f7f3ff"/>
+    </linearGradient>
+    <linearGradient id="primary" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#111827"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="24" stdDeviation="28" flood-color="#0f172a" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="1000" fill="url(#bg)"/>
+  <circle cx="1320" cy="120" r="230" fill="#dbeafe" opacity="0.65"/>
+  <circle cx="1380" cy="840" r="300" fill="#ede9fe" opacity="0.7"/>
+  <circle cx="160" cy="820" r="260" fill="#dcfce7" opacity="0.45"/>
+
+  <g transform="translate(90 80)">
+    <text x="0" y="0" font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" font-size="30" font-weight="700" fill="#2563eb">AI Commerce OS</text>
+    <text x="0" y="90" font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" font-size="72" font-weight="800" fill="#111827">让老板拥有一支</text>
+    <text x="0" y="180" font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" font-size="72" font-weight="800" fill="url(#primary)">AI 电商团队</text>
+    <text x="0" y="245" font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" font-size="28" fill="#475569">AI客服 · AI售后 · AI运营</text>
+    <text x="0" y="295" font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif" font-size="28" fill="#475569">目标：逐步替代约 4 万元/月重复人力成本</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="90" y="440" width="420" height="300" rx="28" fill="#ffffff"/>
+    <rect x="590" y="440" width="420" height="300" rx="28" fill="#ffffff"/>
+    <rect x="1090" y="440" width="420" height="300" rx="28" fill="#ffffff"/>
+  </g>
+
+  <g font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif">
+    <g transform="translate(130 490)">
+      <rect x="0" y="0" width="60" height="60" rx="18" fill="#dbeafe"/>
+      <text x="80" y="42" font-size="34" font-weight="800" fill="#111827">AI客服</text>
+      <text x="0" y="110" font-size="24" fill="#475569">自动回复 FAQ、订单、物流</text>
+      <text x="0" y="155" font-size="24" fill="#475569">高风险问题自动暂停</text>
+      <text x="0" y="200" font-size="24" fill="#475569">商家修改后永久学习</text>
+    </g>
+    <g transform="translate(630 490)">
+      <rect x="0" y="0" width="60" height="60" rx="18" fill="#fee2e2"/>
+      <text x="80" y="42" font-size="34" font-weight="800" fill="#111827">AI售后</text>
+      <text x="0" y="110" font-size="24" fill="#475569">退款、退货、投诉分级</text>
+      <text x="0" y="155" font-size="24" fill="#475569">输出风险和审批建议</text>
+      <text x="0" y="200" font-size="24" fill="#475569">赔偿退款必须人工确认</text>
+    </g>
+    <g transform="translate(1130 490)">
+      <rect x="0" y="0" width="60" height="60" rx="18" fill="#dcfce7"/>
+      <text x="80" y="42" font-size="34" font-weight="800" fill="#111827">AI运营</text>
+      <text x="0" y="110" font-size="24" fill="#475569">识别高意向客户</text>
+      <text x="0" y="155" font-size="24" fill="#475569">生成私域话术和投流草稿</text>
+      <text x="0" y="200" font-size="24" fill="#475569">预算动作老板审批</text>
+    </g>
+  </g>
+
+  <g transform="translate(90 825)" font-family="Microsoft YaHei, PingFang SC, Arial, sans-serif">
+    <rect x="0" y="0" width="1420" height="92" rx="28" fill="#111827"/>
+    <text x="46" y="58" font-size="28" font-weight="700" fill="#ffffff">AI 负责工作，老板负责审批；从客服、售后、运营开始，验证真实降本效果。</text>
+  </g>
+</svg>

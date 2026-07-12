@@ -1,0 +1,20 @@
+{
+  "name": "ai-shop-os",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev:web": "npm --workspace @ai-shop-os/web run dev",
+    "build:web": "npm --workspace @ai-shop-os/web run build",
+    "lint:web": "npm --workspace @ai-shop-os/web run lint",
+    "typecheck:web": "npm --workspace @ai-shop-os/web run typecheck",
+    "api:dev": "python -m uvicorn apps.api.app.main:app --reload --port 8000",
+    "api:test": "python -m pytest apps/api/tests"
+  },
+  "devDependencies": {
+    "supabase": "^2.109.1"
+  }
+}

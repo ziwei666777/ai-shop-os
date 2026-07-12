@@ -1,0 +1,8 @@
+{
+  "project_id": "appgprj_6a5307e4aec0819197ad99d8de2b358b",
+  "framework": "nextjs",
+  "app_dir": "apps/web",
+  "build_command": "npm.cmd run build:web",
+  "start_command": "npm.cmd --workspace @ai-shop-os/web run start",
+  "output_dir": "apps/web/.next"
+}
