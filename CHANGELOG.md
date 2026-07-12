@@ -4,6 +4,8 @@
 
 ### Added
 
+- 新增 Sites 无依赖宣传站发布包脚本 `tools/create_sites_vinext_promo_archive.py`，用于线上部署 ToB 宣传页。
+
 - 新增 `PROJECT_GUIDE.md`，固化 AI Commerce OS 长期开发原则。
 - 新增 `PROJECT_STATE.md`，记录当前产品状态、完成度、阻塞点和安全边界。
 - 新增 `NEXT_TASK.md`，明确下一阶段只开发 Commerce Dataset，不继续新增 Agent。
