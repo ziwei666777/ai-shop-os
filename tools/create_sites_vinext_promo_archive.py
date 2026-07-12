@@ -182,6 +182,58 @@ def build_html(hero_data_url: str) -> str:
     .step p {{ margin-top: 22px; color: var(--muted); line-height: 1.7; }}
     .metric-grid {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
     .metric {{ padding: 18px 20px; color: #334155; }}
+    .experience-wrap {{
+      margin-top: 42px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      overflow: hidden;
+      background: #0f172a;
+      box-shadow: 0 24px 80px rgb(15 23 42 / .14);
+    }}
+    .experience-bar {{
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 20px;
+      color: white;
+      border-bottom: 1px solid rgb(255 255 255 / .12);
+    }}
+    .experience-bar p {{ color: rgb(255 255 255 / .68); font-size: 14px; line-height: 1.6; }}
+    .experience-bar a {{
+      display: inline-flex;
+      min-height: 38px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      background: white;
+      color: #0f172a;
+      padding: 0 14px;
+      font-size: 13px;
+      font-weight: 800;
+    }}
+    .experience-frame {{
+      width: 100%;
+      height: 760px;
+      border: 0;
+      display: block;
+      background: #f8fafc;
+    }}
+    .credential-grid {{
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }}
+    .credential {{
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: white;
+      padding: 16px;
+      color: #334155;
+    }}
+    .credential strong {{ display: block; margin-top: 8px; color: #0f172a; word-break: break-all; }}
     .cta {{ padding: 92px 24px; background: #020617; color: white; text-align: center; }}
     .cta h2 {{ font-size: clamp(32px, 4vw, 52px); }}
     .cta p {{ max-width: 760px; margin: 22px auto 32px; color: rgb(255 255 255 / .72); line-height: 1.8; }}
@@ -193,6 +245,8 @@ def build_html(hero_data_url: str) -> str:
       .demo-cards {{ grid-template-columns: 1fr; }}
       .demo-panel header {{ display: block; }}
       .badge {{ margin-top: 16px; }}
+      .credential-grid {{ grid-template-columns: 1fr; }}
+      .experience-frame {{ height: 700px; }}
       .hero-inner {{ padding-top: 82px; }}
     }}
   </style>
@@ -205,6 +259,7 @@ def build_html(hero_data_url: str) -> str:
         <div class="nav-links">
           <a href="#product">产品说明</a>
           <a href="#demo">演示界面</a>
+          <a href="#experience">产品体验</a>
           <a href="#trial">试用流程</a>
         </div>
       </nav>
@@ -214,7 +269,7 @@ def build_html(hero_data_url: str) -> str:
         <p>从 AI 客服、AI 售后、AI 运营三个岗位开始，把重复、标准化、可审批的工作交给 AI，目标逐步替代约 4 万元/月基础人力成本。</p>
         <div class="actions">
           <a class="button" href="#demo">查看演示界面</a>
-          <a class="button secondary" href="#trial">了解 7 天试用</a>
+          <a class="button secondary" href="#experience">直接体验产品</a>
         </div>
       </div>
     </section>
@@ -347,6 +402,37 @@ def build_html(hero_data_url: str) -> str:
       </div>
     </section>
 
+    <section class="section" id="experience">
+      <div class="section-inner">
+        <div class="section-title">
+          <span>Live Product</span>
+          <h2>直接体验 AI Commerce OS 的完整操作过程</h2>
+          <p>下面嵌入的是可操作的产品控制台。客户可以在宣传页里直接登录体验老板首页、AI客服、AI售后、AI运营、老板审批和数据导入，看到系统不是只停留在概念图。</p>
+        </div>
+        <div class="credential-grid">
+          <div class="credential">体验账号<strong>boss@aicos.local</strong></div>
+          <div class="credential">体验密码<strong>aicos2026</strong></div>
+          <div class="credential">安全说明<strong>演示数据，不执行真实退款、投流或导出动作</strong></div>
+        </div>
+        <div class="experience-wrap">
+          <div class="experience-bar">
+            <div>
+              <strong>AI Commerce OS 商家控制台</strong>
+              <p>如果嵌入窗口显示较小，可以点击右侧按钮打开完整窗口。</p>
+            </div>
+            <a href="https://ai-commerce-os-internal.ybqes.chatgpt.site" target="_blank" rel="noreferrer">打开完整控制台</a>
+          </div>
+          <iframe
+            class="experience-frame"
+            loading="lazy"
+            referrerpolicy="no-referrer"
+            src="https://ai-commerce-os-internal.ybqes.chatgpt.site"
+            title="AI Commerce OS 内部试用控制台"
+          ></iframe>
+        </div>
+      </div>
+    </section>
+
     <section class="section" id="trial">
       <div class="section-inner">
         <div class="section-title">
@@ -387,7 +473,7 @@ def build_html(hero_data_url: str) -> str:
     <section class="cta">
       <h2>先用一家真实店铺验证降本</h2>
       <p>导入历史数据，跑 AI 客服和 AI 售后，收集修正样本，一周后用指标判断是否继续扩大自动化。</p>
-      <a class="button" href="#demo">查看演示流程</a>
+      <a class="button" href="#experience">进入产品体验</a>
     </section>
   </main>
   <script>
