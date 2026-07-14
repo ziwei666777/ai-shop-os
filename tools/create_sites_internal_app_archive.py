@@ -308,7 +308,7 @@ def build_html() -> str:
         <h3>后端 API 设置</h3>
         <p class="muted mini" style="margin-top:8px">如果 FastAPI 后端已经部署，填入地址和桥接密钥后，可把真实消息同步到后端数据库。</p>
         <label>后端 API 地址</label><input id="apiBase" value="${state.apiBase || ""}" placeholder="https://api.your-domain.com" />
-        <label>桥接密钥</label><input id="bridgeKey" value="${state.bridgeKey || ""}" placeholder="X-AICOS-Bridge-Key" />
+        <label>桥接密钥（生产必填，本地测试可空）</label><input id="bridgeKey" value="${state.bridgeKey || ""}" placeholder="X-AICOS-Bridge-Key" />
         <div class="toolbar"><button class="btn green" data-action="save-settings">保存设置</button><button class="btn secondary" data-action="test-api">测试后端连接</button><button class="btn red" data-action="reset-data">清空本店本地数据</button></div>
       </div>
       <div class="notice" style="margin-top:16px">安全边界：AI 不自动退款、不自动赔偿、不自动改价、不自动投流花钱。涉及钱和投诉必须老板确认。</div>`;
@@ -446,14 +446,16 @@ def build_html() -> str:
     function closeCase(id) { const item = state.cases.find(c => c.id === id); if (item) { item.status = "已处理"; state.savedMinutes += 8; state.savedYuan = Math.round(state.savedMinutes / 60 * HOURLY_COST); saveState(); renderPage("aftersale"); showToast("售后任务已处理，并计入省钱统计。"); } }
 
     async function sendPendingToApi() {
-      if (!state.apiBase || !state.bridgeKey) { showToast("请先在系统设置里填写后端 API 地址和桥接密钥。", "danger"); return; }
+      if (!state.apiBase) { showToast("请先在系统设置里填写后端 API 地址。", "danger"); return; }
       const pending = state.messages.filter(m => m.status === "待处理" || m.status === "人工确认").slice(0, 10);
       let ok = 0;
       for (const msg of pending) {
         try {
+          const headers = { "content-type":"application/json" };
+          if (state.bridgeKey) headers["X-AICOS-Bridge-Key"] = state.bridgeKey;
           const res = await fetch(state.apiBase.replace(/\\/$/, "") + "/v1/customer-agent/external-messages", {
             method:"POST",
-            headers:{ "content-type":"application/json", "X-AICOS-Bridge-Key":state.bridgeKey },
+            headers,
             body:JSON.stringify({ platform: platformCode(msg.platform), platform_message_id: msg.id, customer_name: msg.customer, content: msg.content, channel:"merchant_console" })
           });
           if (res.ok) ok++;
