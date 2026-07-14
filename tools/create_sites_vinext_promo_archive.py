@@ -182,6 +182,82 @@ def build_html(hero_data_url: str) -> str:
     .step p {{ margin-top: 22px; color: var(--muted); line-height: 1.7; }}
     .metric-grid {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
     .metric {{ padding: 18px 20px; color: #334155; }}
+    .sandbox {{
+      margin-top: 42px;
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 18px;
+      align-items: stretch;
+    }}
+    .sandbox-card {{
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: white;
+      padding: 24px;
+      box-shadow: 0 18px 60px rgb(15 23 42 / .08);
+    }}
+    .sandbox-card h3 {{ font-size: 24px; }}
+    .sandbox-card p {{ margin-top: 12px; color: var(--muted); line-height: 1.75; }}
+    .sandbox textarea {{
+      width: 100%;
+      min-height: 150px;
+      margin-top: 18px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px;
+      color: #0f172a;
+      font: inherit;
+      line-height: 1.65;
+      outline: none;
+    }}
+    .sandbox textarea:focus {{ border-color: var(--primary); box-shadow: 0 0 0 4px rgb(15 118 110 / .1); }}
+    .sandbox-actions {{ display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }}
+    .sandbox-actions button {{
+      min-height: 42px;
+      border: 0;
+      border-radius: 8px;
+      padding: 0 16px;
+      background: #0f172a;
+      color: white;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+    }}
+    .sandbox-actions button.secondary {{ border: 1px solid var(--line); background: white; color: #0f172a; }}
+    .sandbox-output {{
+      min-height: 100%;
+      border: 1px solid #bfdbfe;
+      border-radius: 14px;
+      background: #eff6ff;
+      padding: 24px;
+    }}
+    .sandbox-output small {{ color: #1d4ed8; font-weight: 800; }}
+    .sandbox-output h3 {{ margin-top: 12px; font-size: 26px; }}
+    .sandbox-result {{
+      margin-top: 18px;
+      border-radius: 10px;
+      background: white;
+      padding: 18px;
+      color: #172033;
+      line-height: 1.8;
+      white-space: pre-wrap;
+    }}
+    .sandbox-kpis {{
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 18px;
+    }}
+    .sandbox-kpis span {{
+      border-radius: 10px;
+      background: rgb(255 255 255 / .78);
+      padding: 12px;
+      color: #334155;
+      font-size: 13px;
+      line-height: 1.5;
+    }}
     .experience-wrap {{
       margin-top: 42px;
       border: 1px solid var(--line);
@@ -239,7 +315,7 @@ def build_html(hero_data_url: str) -> str:
     .cta p {{ max-width: 760px; margin: 22px auto 32px; color: rgb(255 255 255 / .72); line-height: 1.8; }}
     @media (max-width: 980px) {{
       .nav-links {{ display: none; }}
-      .cost-grid, .agent-grid, .steps, .split, .metric-grid {{ grid-template-columns: 1fr; }}
+      .cost-grid, .agent-grid, .steps, .split, .metric-grid, .sandbox, .sandbox-kpis {{ grid-template-columns: 1fr; }}
       .demo-shell {{ grid-template-columns: 1fr; }}
       .demo-tabs {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
       .demo-cards {{ grid-template-columns: 1fr; }}
@@ -259,6 +335,7 @@ def build_html(hero_data_url: str) -> str:
         <div class="nav-links">
           <a href="#product">产品说明</a>
           <a href="#demo">演示界面</a>
+          <a href="#sandbox">现场试用</a>
           <a href="#experience">产品体验</a>
           <a href="#trial">试用流程</a>
         </div>
@@ -402,6 +479,38 @@ def build_html(hero_data_url: str) -> str:
       </div>
     </section>
 
+    <section class="section" id="sandbox">
+      <div class="section-inner">
+        <div class="section-title">
+          <span>Try It Now</span>
+          <h2>商家不用登录，也能现场试一下 AI 客服和 AI 售后</h2>
+          <p>这是展示页内置的试用沙盒。它不会连接真实店铺，也不会真的发送消息；它用安全规则演示 AI 如何生成客服回复、识别售后风险、判断是否需要老板审批。</p>
+        </div>
+        <div class="sandbox">
+          <div class="sandbox-card">
+            <h3>输入一条真实客户问题</h3>
+            <p>可以直接复制商家客服聊天里的问题，例如“什么时候发货”“订单到哪了”“能不能退款”“物流超时要赔偿”。</p>
+            <textarea id="sandbox-input">这件外套今天下单什么时候发？我明天要穿，能不能帮我催一下？</textarea>
+            <div class="sandbox-actions">
+              <button type="button" data-sandbox-action="customer">生成 AI 客服回复</button>
+              <button class="secondary" type="button" data-sandbox-action="after-sale">判断售后风险</button>
+              <button class="secondary" type="button" data-sandbox-action="sample">换一个高风险样例</button>
+            </div>
+          </div>
+          <div class="sandbox-output">
+            <small id="sandbox-mode">AI 客服试用结果</small>
+            <h3 id="sandbox-title">低风险，可生成回复草稿</h3>
+            <div class="sandbox-result" id="sandbox-result">您好，这款商品正常情况下今天 18:00 前付款会优先当天出库。您下单后我会继续帮您关注物流揽收情况。如果物流 24 小时没有更新，我会帮您转人工继续跟进。</div>
+            <div class="sandbox-kpis">
+              <span id="sandbox-kpi-1">风险等级：低</span>
+              <span id="sandbox-kpi-2">建议动作：可自动草稿</span>
+              <span id="sandbox-kpi-3">预计节省：4 分钟</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="section" id="experience">
       <div class="section-inner">
         <div class="section-title">
@@ -482,6 +591,130 @@ def build_html(hero_data_url: str) -> str:
         const target = button.getAttribute("data-demo-tab");
         document.querySelectorAll("[data-demo-tab]").forEach((tab) => tab.classList.toggle("active", tab === button));
         document.querySelectorAll("[data-demo-panel]").forEach((panel) => panel.classList.toggle("active", panel.getAttribute("data-demo-panel") === target));
+      }});
+    }});
+
+    const sandboxInput = document.getElementById("sandbox-input");
+    const sandboxMode = document.getElementById("sandbox-mode");
+    const sandboxTitle = document.getElementById("sandbox-title");
+    const sandboxResult = document.getElementById("sandbox-result");
+    const sandboxKpi1 = document.getElementById("sandbox-kpi-1");
+    const sandboxKpi2 = document.getElementById("sandbox-kpi-2");
+    const sandboxKpi3 = document.getElementById("sandbox-kpi-3");
+
+    function hasAny(text, words) {{
+      return words.some((word) => text.includes(word));
+    }}
+
+    function renderSandbox(mode, title, result, k1, k2, k3) {{
+      sandboxMode.textContent = mode;
+      sandboxTitle.textContent = title;
+      sandboxResult.textContent = result;
+      sandboxKpi1.textContent = k1;
+      sandboxKpi2.textContent = k2;
+      sandboxKpi3.textContent = k3;
+    }}
+
+    function customerReply() {{
+      const text = sandboxInput.value.trim();
+      if (!text) {{
+        renderSandbox("AI 客服试用结果", "请输入客户问题", "请先在左侧输入客户咨询内容。", "风险等级：未知", "建议动作：等待输入", "预计节省：0 分钟");
+        return;
+      }}
+      if (hasAny(text, ["退款", "退货", "赔", "补偿", "投诉", "差评", "仅退款", "威胁"])) {{
+        renderSandbox(
+          "AI 客服试用结果",
+          "高风险，必须人工接管",
+          "这个问题涉及退款、赔偿、投诉或差评风险，AI 不能自动承诺金额或处理结果。建议回复：您好，我已经看到您的问题，这类情况需要商家确认后处理。我会先为您登记并转人工核实订单、物流和商品情况，确认后给您明确处理方案。",
+          "风险等级：高",
+          "建议动作：人工确认",
+          "预计节省：避免错误承诺"
+        );
+        return;
+      }}
+      if (hasAny(text, ["发货", "物流", "到哪", "快递", "催"])) {{
+        renderSandbox(
+          "AI 客服试用结果",
+          "低风险，可生成回复草稿",
+          "您好，正常情况下当天 18:00 前付款会优先当天出库。您下单后我会继续帮您关注物流揽收情况。如果物流 24 小时没有更新，我会帮您转人工继续跟进。",
+          "风险等级：低",
+          "建议动作：可自动草稿",
+          "预计节省：4 分钟"
+        );
+        return;
+      }}
+      if (hasAny(text, ["尺码", "大小", "身高", "体重", "合适"])) {{
+        renderSandbox(
+          "AI 客服试用结果",
+          "低风险，可生成尺码建议",
+          "您好，尺码建议优先参考商品详情页尺码表。如果您方便提供身高、体重和喜欢宽松还是合身，我可以帮您进一步建议；如介于两个尺码之间，建议优先选择大一码。",
+          "风险等级：低",
+          "建议动作：可自动草稿",
+          "预计节省：3 分钟"
+        );
+        return;
+      }}
+      renderSandbox(
+        "AI 客服试用结果",
+        "中风险，建议人工确认后学习",
+        "这个问题没有命中明确知识。建议先由客服确认标准答案，确认后的回复会进入学习记录，下次类似问题可自动生成草稿。",
+        "风险等级：中",
+        "建议动作：人工确认并学习",
+        "预计节省：下次生效"
+      );
+    }}
+
+    function afterSaleCheck() {{
+      const text = sandboxInput.value.trim();
+      if (!text) {{
+        renderSandbox("AI 售后试用结果", "请输入售后问题", "请先在左侧输入退款、退货、投诉或物流异常内容。", "风险等级：未知", "建议动作：等待输入", "预计节省：0 分钟");
+        return;
+      }}
+      if (hasAny(text, ["赔", "补偿", "投诉", "差评", "平台介入", "威胁"])) {{
+        renderSandbox(
+          "AI 售后试用结果",
+          "高风险售后，必须老板审批",
+          "判断：涉及赔偿、投诉或平台风险，AI 只能给处理建议，不能自动承诺。建议流程：1. 查询订单和物流；2. 收集图片或凭证；3. 给出补偿/拒绝/补证三个选项；4. 老板确认后再回复客户。",
+          "风险等级：高",
+          "建议动作：老板审批",
+          "预计节省：12 分钟"
+        );
+        return;
+      }}
+      if (hasAny(text, ["退款", "退货", "不想要", "七天"])) {{
+        renderSandbox(
+          "AI 售后试用结果",
+          "中风险售后，需要人工确认",
+          "判断：这是退款/退货类问题，AI 可以先说明流程，但不能自动同意退款。建议回复客户先提交申请并保留商品状态，客服核实订单后处理。",
+          "风险等级：中",
+          "建议动作：人工确认",
+          "预计节省：8 分钟"
+        );
+        return;
+      }}
+      renderSandbox(
+        "AI 售后试用结果",
+        "低风险说明，可生成流程回复",
+        "判断：当前更像普通流程咨询。AI 可以回复售后流程说明，但如后续涉及金额、退款、赔偿，需要转人工审批。",
+        "风险等级：低",
+        "建议动作：流程说明",
+        "预计节省：5 分钟"
+      );
+    }}
+
+    document.querySelectorAll("[data-sandbox-action]").forEach((button) => {{
+      button.addEventListener("click", () => {{
+        const action = button.getAttribute("data-sandbox-action");
+        if (action === "sample") {{
+          sandboxInput.value = "物流已经超时两天了，我要投诉，还要你们赔偿，不然我就给差评。";
+          afterSaleCheck();
+          return;
+        }}
+        if (action === "after-sale") {{
+          afterSaleCheck();
+          return;
+        }}
+        customerReply();
       }});
     }});
   </script>
