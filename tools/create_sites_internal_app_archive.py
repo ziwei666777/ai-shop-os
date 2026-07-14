@@ -309,7 +309,7 @@ def build_html() -> str:
         <p class="muted mini" style="margin-top:8px">如果 FastAPI 后端已经部署，填入地址和桥接密钥后，可把真实消息同步到后端数据库。</p>
         <label>后端 API 地址</label><input id="apiBase" value="${state.apiBase || ""}" placeholder="https://api.your-domain.com" />
         <label>桥接密钥</label><input id="bridgeKey" value="${state.bridgeKey || ""}" placeholder="X-AICOS-Bridge-Key" />
-        <div class="toolbar"><button class="btn green" data-action="save-settings">保存设置</button><button class="btn red" data-action="reset-data">清空本店本地数据</button></div>
+        <div class="toolbar"><button class="btn green" data-action="save-settings">保存设置</button><button class="btn secondary" data-action="test-api">测试后端连接</button><button class="btn red" data-action="reset-data">清空本店本地数据</button></div>
       </div>
       <div class="notice" style="margin-top:16px">安全边界：AI 不自动退款、不自动赔偿、不自动改价、不自动投流花钱。涉及钱和投诉必须老板确认。</div>`;
     }
@@ -355,6 +355,7 @@ def build_html() -> str:
       if (action === "new-message") openNewMessageDrawer();
       if (action === "new-case") openNewCaseDrawer();
       if (action === "save-settings") { state.apiBase = document.getElementById("apiBase").value.trim(); state.bridgeKey = document.getElementById("bridgeKey").value.trim(); saveState(); showToast("设置已保存。"); }
+      if (action === "test-api") testApiConnection();
       if (action === "reset-data") { state = defaultState(); saveState(); renderPage("dashboard"); showToast("已清空并恢复初始数据。", "danger"); }
       if (action === "send-pending-api") sendPendingToApi();
       if (action === "ops-script") document.getElementById("opsOutput").innerHTML = `<h3>私域话术</h3><p class="muted" style="margin-top:8px;line-height:1.8">您好，我看到您刚才咨询了尺码和发货。我们可以帮您优先确认库存，并给您保留当前优惠，有需要可以继续发身高体重，我帮您推荐。</p>`;
@@ -459,6 +460,21 @@ def build_html() -> str:
         } catch {}
       }
       showToast("已尝试发送 " + pending.length + " 条消息到后端，成功 " + ok + " 条。");
+    }
+    async function testApiConnection() {
+      const apiBase = (document.getElementById("apiBase")?.value || state.apiBase || "").trim();
+      if (!apiBase) { showToast("请先填写后端 API 地址。", "danger"); return; }
+      try {
+        const response = await fetch(apiBase.replace(/\\/$/, "") + "/health/ready", { headers:{ accept:"application/json" } });
+        const payload = await response.json();
+        if (payload.status === "ready") {
+          showToast("后端已就绪：数据库和桥接密钥都已配置，可以接真实商家消息。");
+          return;
+        }
+        showToast("后端还没完全就绪：数据库=" + (payload.database ? "已连接" : "未连接") + "，桥接密钥=" + (payload.bridge_key ? "已配置" : "未配置") + "。", "danger");
+      } catch {
+        showToast("无法连接后端 API。请确认 FastAPI 已部署，并允许当前控制台域名跨域访问。", "danger");
+      }
     }
     function platformCode(name) { if (name.includes("抖")) return "douyin"; if (name.includes("闲")) return "xianyu"; if (name.includes("Shopify")) return "shopify"; return "taobao"; }
     function replacementRate() { const total = Math.max(1, state.messages.length + state.cases.length); const done = state.messages.filter(m => m.status === "已采用" || m.status === "已修改").length + state.cases.filter(c => c.status === "已处理").length; return Math.min(70, Math.round(done / total * 100)); }
