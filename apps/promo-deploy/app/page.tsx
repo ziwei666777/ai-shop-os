@@ -1,227 +1,235 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 import {
-  ArrowRight,
-  Check,
-  ChevronRight,
-  Heart,
+  ArrowUpRight,
+  CornerUpLeft,
+  Droplets,
+  FlaskConical,
   Leaf,
   Menu,
-  PackageCheck,
   Search,
-  ShieldCheck,
   ShoppingBag,
-  Sparkles,
-  Star,
-  Truck
+  Sun,
+  X
 } from "lucide-react";
 
-const heroProduct =
-  "https://polo-pecan-73837341.figma.site/_assets/v11/50ad042b3cd48a2e120ea3ba17c8cfeaf3cc334c.png";
-const capsuleImage =
-  "https://polo-pecan-73837341.figma.site/_assets/v11/6a7de4fbe9c9e2315040607320a9ff5e93117bf4.png";
-const miniProduct =
-  "https://polo-pecan-73837341.figma.site/_assets/v11/30e8f38d1f993c357a3be2721557fc899d5640fc.png";
-const naturalTexture =
-  "https://polo-pecan-73837341.figma.site/_assets/v11/6736cbe6e26afa2cd7c04a91892a79f7640785b5.png";
-const avatar =
+const backgroundImage =
+  "https://images.higgs.ai/?default=1&output=webp&url=https%3A%2F%2Fd8j0ntlcm91z4.cloudfront.net%2Fuser_38xzZboKViGWJOttwIXH07lWA1P%2Fhf_20260624_110248_b62f758d-f68c-4045-a7b4-91771d6d0a0f.png&w=1280&q=85";
+const avatarImage =
   "https://polo-pecan-73837341.figma.site/_assets/v11/ca8093996e970200cbcf8bde8744175e52da5a79.png";
+const inlineCapsuleImage =
+  "https://polo-pecan-73837341.figma.site/_assets/v11/6a7de4fbe9c9e2315040607320a9ff5e93117bf4.png";
+const heroProductImage =
+  "https://polo-pecan-73837341.figma.site/_assets/v11/50ad042b3cd48a2e120ea3ba17c8cfeaf3cc334c.png";
+const panelLeafImage =
+  "https://polo-pecan-73837341.figma.site/_assets/v11/6736cbe6e26afa2cd7c04a91892a79f7640785b5.png";
+const smallProductImage =
+  "https://polo-pecan-73837341.figma.site/_assets/v11/30e8f38d1f993c357a3be2721557fc899d5640fc.png";
 
-const products = [
+const navLinks = ["About", "Products", "Promotions", "Contact"];
+
+const headlineLines = [
+  [
+    { text: "The", dimmed: false, delay: "delay-300" },
+    { text: "Power", dimmed: false, delay: "delay-400" },
+    { text: "of", dimmed: true, delay: "delay-500" }
+  ],
+  [
+    { text: "Nature", dimmed: true, delay: "delay-600" },
+    { text: "in", dimmed: true, delay: "delay-700" },
+    { text: "Every", dimmed: false, delay: "delay-800" }
+  ]
+];
+
+const carouselCards = [
   {
-    name: "植萃能量胶囊",
-    desc: "适合通勤、健身与高强度工作日",
-    price: "¥169",
-    image: capsuleImage
+    text: "Experience our newly enhanced natural formula",
+    Icon: FlaskConical,
+    tone: "black"
   },
   {
-    name: "深睡舒缓组合",
-    desc: "镁元素 + 草本复配，晚间放松",
-    price: "¥219",
-    image: miniProduct
+    text: "Pure organic ingredients sourced sustainably",
+    Icon: Leaf,
+    tone: "emerald"
   },
   {
-    name: "日常平衡套装",
-    desc: "30 天装，订阅购更省心",
-    price: "¥299",
-    image: heroProduct
+    text: "Advanced bioavailability for maximum absorption",
+    Icon: Droplets,
+    tone: "cyan"
+  },
+  {
+    text: "Clinically tested for daily energy & vitality",
+    Icon: Sun,
+    tone: "amber"
   }
 ];
 
-const benefits = [
-  { title: "植物配方", desc: "不含人工色素与甜味剂", Icon: Leaf },
-  { title: "48小时发货", desc: "顺丰/京东仓优先配送", Icon: Truck },
-  { title: "安心追溯", desc: "每批次提供检测编号", Icon: ShieldCheck }
-];
-
-const specs = ["30 粒/瓶", "每日 1 粒", "无糖配方", "适合素食"];
-
 export default function Page() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [activeCard, setActiveCard] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setActiveCard((current) => (current + 1) % carouselCards.length);
+    }, 3500);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [menuOpen]);
+
   return (
-    <main className="storefront">
-      <section className="hero" id="top">
-        <nav className="nav" aria-label="主导航">
-          <a className="brand" href="#top" aria-label="TerraElix 首页">
-            TerraElix
-          </a>
-          <div className="navLinks">
-            <a href="#products">商品</a>
-            <a href="#benefits">成分</a>
-            <a href="#reviews">评价</a>
-            <a href="#service">售后</a>
-          </div>
-          <div className="navTools">
-            <button aria-label="搜索商品">
-              <Search size={20} strokeWidth={1.7} />
-            </button>
-            <button aria-label="查看购物袋">
-              <ShoppingBag size={20} strokeWidth={1.7} />
-              <span>2</span>
-            </button>
-            <img alt="会员头像" src={avatar} />
-            <button className="menuButton" aria-label="打开菜单">
-              <Menu size={22} strokeWidth={1.7} />
-            </button>
-          </div>
-        </nav>
+    <main
+      className="terra-page"
+      style={{ "--hero-bg": `url("${backgroundImage}")` } as CSSProperties}
+    >
+      <nav className="terra-nav animate-fade-in" aria-label="Primary navigation">
+        <a className="terra-brand animate-slide-left delay-200" href="#top">
+          TerraElix
+        </a>
 
-        <div className="heroGrid">
-          <article className="floatingCard topLeft">
-            <img alt="植萃能量胶囊小图" src={capsuleImage} />
-            <p>热卖单品</p>
-            <strong>¥169</strong>
-          </article>
-
-          <article className="floatingCard topRight">
-            <img alt="用户开箱视频封面" src={avatar} />
-            <span className="playDot">
-              <ChevronRight size={16} strokeWidth={2.2} />
-            </span>
-            <p>开箱与服用体验</p>
-          </article>
-
-          <div className="headline">
-            <span className="eyebrow">
-              <Sparkles size={16} strokeWidth={1.8} />
-              新品上市 / 30 天装
-            </span>
-            <h1>
-              每日自然能量
-              <br />
-              从一粒开始
-            </h1>
-            <p>
-              TerraElix 植萃营养胶囊，精选草本与矿物营养，帮助你在忙碌生活中保持清醒、平衡与轻盈。
-            </p>
-          </div>
-
-          <div className="productStage" aria-label="TerraElix 日常平衡套装展示">
-            <img className="texture" alt="" src={naturalTexture} />
-            <img className="mainProduct" alt="TerraElix 日常平衡套装" src={heroProduct} />
-          </div>
-
-          <article className="purchaseCard">
-            <span>爆款组合</span>
-            <h2>日常平衡套装</h2>
-            <div className="ratingLine" aria-label="评分 4.8 分">
-              <strong>4.8</strong>
-              <Star size={16} fill="currentColor" />
-              <small>12,860 条真实评价</small>
-            </div>
-            <div className="priceLine">
-              <strong>¥299</strong>
-              <small>订阅购 ¥254 / 月</small>
-            </div>
-            <div className="specs">
-              {specs.map((spec) => (
-                <span key={spec}>{spec}</span>
-              ))}
-            </div>
-            <div className="buyActions">
-              <a href="#products">
-                立即购买
-                <ArrowRight size={18} strokeWidth={1.8} />
-              </a>
-              <button>
-                <Heart size={18} strokeWidth={1.8} />
-                收藏
-              </button>
-            </div>
-          </article>
-        </div>
-
-        <div className="heroFooter" id="benefits">
-          <article>
-            <strong>28K+</strong>
-            <p>会员正在使用 TerraElix 做日常营养管理</p>
-          </article>
-          <article className="centerPanel">
-            <PackageCheck size={34} strokeWidth={1.5} />
-            <div>
-              <strong>满 ¥199 包邮</strong>
-              <p>支持 7 天无理由退换，破损包赔</p>
-            </div>
-          </article>
-          <article>
-            <strong>4.8</strong>
-            <div className="footerStars" aria-label="五星评价">
-              {Array.from({ length: 5 }).map((_, index) => (
-                <Star key={index} size={14} fill="currentColor" />
-              ))}
-            </div>
-            <p>来自高频复购用户的综合评分</p>
-          </article>
-        </div>
-      </section>
-
-      <section className="productSection" id="products">
-        <div className="sectionTitle">
-          <span>精选商品</span>
-          <h2>按你的生活节奏选择营养方案</h2>
-        </div>
-        <div className="productGrid">
-          {products.map((product) => (
-            <article className="productCard" key={product.name}>
-              <div className="productImageWrap">
-                <img alt={product.name} src={product.image} />
-              </div>
-              <h3>{product.name}</h3>
-              <p>{product.desc}</p>
-              <div>
-                <strong>{product.price}</strong>
-                <button aria-label={`加入购物袋：${product.name}`}>
-                  <ShoppingBag size={18} strokeWidth={1.8} />
-                </button>
-              </div>
-            </article>
+        <div className="terra-nav-links animate-fade-in delay-400">
+          {navLinks.map((link) => (
+            <a href={`#${link.toLowerCase()}`} key={link}>
+              {link}
+            </a>
           ))}
         </div>
-      </section>
 
-      <section className="serviceStrip" id="service">
-        {benefits.map(({ title, desc, Icon }) => (
-          <article key={title}>
-            <Icon size={28} strokeWidth={1.7} />
-            <div>
-              <h3>{title}</h3>
-              <p>{desc}</p>
-            </div>
-            <Check size={18} strokeWidth={2} />
-          </article>
-        ))}
-      </section>
-
-      <section className="reviewSection" id="reviews">
-        <div>
-          <span>真实反馈</span>
-          <h2>“早上不用再靠第三杯咖啡硬撑。”</h2>
-          <p>
-            购物袋、规格、评价和售后信息都在首屏内完成决策，适合投放页、品牌首页或新品首发活动。
-          </p>
+        <div className="terra-actions animate-slide-right delay-300">
+          <button type="button" aria-label="Search">
+            <Search size={20} strokeWidth={1.5} />
+          </button>
+          <button type="button" aria-label="Shopping bag">
+            <ShoppingBag size={20} strokeWidth={1.5} />
+          </button>
+          <button type="button" aria-label="Return">
+            <CornerUpLeft size={20} strokeWidth={1.5} />
+          </button>
+          <img src={avatarImage} alt="TerraElix member avatar" />
+          <button
+            className="menu-toggle"
+            type="button"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            {menuOpen ? <X size={22} strokeWidth={1.6} /> : <Menu size={22} strokeWidth={1.6} />}
+          </button>
         </div>
-        <a href="#top">
-          回到顶部选购
-          <ArrowRight size={18} strokeWidth={1.8} />
-        </a>
+      </nav>
+
+      {menuOpen ? (
+        <div className="mobile-menu" role="dialog" aria-modal="true" aria-label="Mobile navigation">
+          {navLinks.map((link) => (
+            <a href={`#${link.toLowerCase()}`} key={link} onClick={() => setMenuOpen(false)}>
+              {link}
+            </a>
+          ))}
+        </div>
+      ) : null}
+
+      <section className="terra-hero" id="top">
+        <div className="hero-copy">
+          <h1 aria-label="The Power of Nature in Every Capsule">
+            {headlineLines.map((line, lineIndex) => (
+              <span className="headline-line" key={lineIndex}>
+                {line.map((word) => (
+                  <span
+                    className={`word-mask animate-word-reveal ${word.dimmed ? "dimmed" : ""} ${word.delay}`}
+                    key={word.text}
+                    aria-hidden="true"
+                  >
+                    <span>{word.text}</span>
+                  </span>
+                ))}
+              </span>
+            ))}
+            <span className="headline-line">
+              <span className="word-mask animate-word-reveal delay-900" aria-hidden="true">
+                <span>Capsule</span>
+              </span>
+              <img
+                className="inline-capsule animate-scale-in delay-1000"
+                src={inlineCapsuleImage}
+                alt=""
+                aria-hidden="true"
+              />
+            </span>
+          </h1>
+
+          <div className="cta-row animate-fade-up delay-600">
+            <a className="primary-cta" href="#products">
+              Explore Now
+              <ArrowUpRight size={24} strokeWidth={1.6} />
+            </a>
+            <p>Discover our new plant-based supplements for daily balance and clean energy.</p>
+          </div>
+        </div>
       </section>
+
+      <div className="mobile-product-wrap animate-scale-in delay-800">
+        <img src={heroProductImage} alt="TerraElix plant-based supplement capsules" />
+      </div>
+
+      <section className="panel-grid" id="products" aria-label="TerraElix product highlights">
+        <article className="panel panel-assessment animate-fade-up delay-900">
+          <div>
+            <h2>Start your personalized path to natural balance</h2>
+            <a href="#about">Personal Assessment</a>
+          </div>
+          <img src={panelLeafImage} alt="" aria-hidden="true" />
+        </article>
+
+        <article className="panel panel-carousel animate-fade-up delay-1000">
+          <div className="carousel-stage" aria-live="polite">
+            {carouselCards.map(({ text, Icon, tone }, index) => (
+              <div
+                className={`carousel-card ${activeCard === index ? "active" : ""}`}
+                key={text}
+                aria-hidden={activeCard !== index}
+              >
+                <span className={`icon-bubble ${tone}`}>
+                  <Icon size={22} strokeWidth={1.7} />
+                </span>
+                <p>{text}</p>
+              </div>
+            ))}
+          </div>
+          <div className="carousel-dots" aria-label="Formula highlights">
+            {carouselCards.map((card, index) => (
+              <button
+                className={activeCard === index ? "active" : ""}
+                type="button"
+                aria-label={`Show highlight ${index + 1}`}
+                onClick={() => setActiveCard(index)}
+                key={card.text}
+              />
+            ))}
+          </div>
+        </article>
+
+        <article className="panel panel-community animate-fade-up delay-1100">
+          <img src={smallProductImage} alt="TerraElix daily wellness pack" />
+          <div>
+            <strong>+14K</strong>
+            <p>People have already optimized their wellness</p>
+          </div>
+        </article>
+      </section>
+
+      <img
+        className="desktop-product animate-scale-in delay-700"
+        src={heroProductImage}
+        alt="TerraElix plant-based supplement capsules"
+      />
     </main>
   );
 }
