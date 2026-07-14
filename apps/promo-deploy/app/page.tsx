@@ -1,172 +1,226 @@
-import Image from "next/image";
+import {
+  ArrowRight,
+  Check,
+  ChevronRight,
+  Heart,
+  Leaf,
+  Menu,
+  PackageCheck,
+  Search,
+  ShieldCheck,
+  ShoppingBag,
+  Sparkles,
+  Star,
+  Truck
+} from "lucide-react";
 
-const costs = [
-  ["客服", "售前咨询、订单查询、物流追踪、催付转化"],
-  ["售后", "退款退货、投诉分级、异常物流、赔偿初筛"],
-  ["运营", "客户线索、私域话术、投流计划、活动复盘"]
+const heroProduct =
+  "https://polo-pecan-73837341.figma.site/_assets/v11/50ad042b3cd48a2e120ea3ba17c8cfeaf3cc334c.png";
+const capsuleImage =
+  "https://polo-pecan-73837341.figma.site/_assets/v11/6a7de4fbe9c9e2315040607320a9ff5e93117bf4.png";
+const miniProduct =
+  "https://polo-pecan-73837341.figma.site/_assets/v11/30e8f38d1f993c357a3be2721557fc899d5640fc.png";
+const naturalTexture =
+  "https://polo-pecan-73837341.figma.site/_assets/v11/6736cbe6e26afa2cd7c04a91892a79f7640785b5.png";
+const avatar =
+  "https://polo-pecan-73837341.figma.site/_assets/v11/ca8093996e970200cbcf8bde8744175e52da5a79.png";
+
+const products = [
+  {
+    name: "植萃能量胶囊",
+    desc: "适合通勤、健身与高强度工作日",
+    price: "¥169",
+    image: capsuleImage
+  },
+  {
+    name: "深睡舒缓组合",
+    desc: "镁元素 + 草本复配，晚间放松",
+    price: "¥219",
+    image: miniProduct
+  },
+  {
+    name: "日常平衡套装",
+    desc: "30 天装，订阅购更省心",
+    price: "¥299",
+    image: heroProduct
+  }
 ];
 
-const agents = [
-  ["AI客服", "自动处理 FAQ、订单、物流等低风险问题；不会的问题交给人工，并记录修改。"],
-  ["AI售后", "识别退款、退货、投诉和异常物流，输出风险等级和审批建议。"],
-  ["AI运营", "识别高意向客户，生成私域话术和投流计划草稿，预算动作必须审批。"]
+const benefits = [
+  { title: "植物配方", desc: "不含人工色素与甜味剂", Icon: Leaf },
+  { title: "48小时发货", desc: "顺丰/京东仓优先配送", Icon: Truck },
+  { title: "安心追溯", desc: "每批次提供检测编号", Icon: ShieldCheck }
 ];
 
-const demoRows = [
-  ["客户咨询", "这件外套今天下单什么时候发？", "AI 判断为物流低风险，生成回复草稿"],
-  ["售后投诉", "物流超时要求赔偿", "AI 标记高风险，必须老板审批"],
-  ["运营线索", "7 天内多次咨询尺码和发货", "AI 生成私域引导话术和投流草稿"],
-  ["老板审批", "退款、赔偿、预算、群发", "统一进入审批，记录决策依据"]
-];
-
-const metrics = [
-  "客服自动回复率",
-  "客服错误率",
-  "人工接管率",
-  "售后分类准确率",
-  "高风险拦截率",
-  "私域线索数量",
-  "运营建议采纳率",
-  "节省人工分钟数"
-];
+const specs = ["30 粒/瓶", "每日 1 粒", "无糖配方", "适合素食"];
 
 export default function Page() {
   return (
-    <main>
-      <section className="hero">
-        <Image
-          alt="AI Commerce OS 商务运营中枢"
-          className="heroImage"
-          fill
-          priority
-          src="/marketing/ai-commerce-os-b2b-hero.png"
-        />
-        <div className="heroOverlay" />
-        <nav className="nav">
-          <strong>AI Commerce OS</strong>
-          <div>
-            <a href="#product">产品说明</a>
-            <a href="#demo">演示界面</a>
-            <a href="#trial">试用流程</a>
+    <main className="storefront">
+      <section className="hero" id="top">
+        <nav className="nav" aria-label="主导航">
+          <a className="brand" href="#top" aria-label="TerraElix 首页">
+            TerraElix
+          </a>
+          <div className="navLinks">
+            <a href="#products">商品</a>
+            <a href="#benefits">成分</a>
+            <a href="#reviews">评价</a>
+            <a href="#service">售后</a>
+          </div>
+          <div className="navTools">
+            <button aria-label="搜索商品">
+              <Search size={20} strokeWidth={1.7} />
+            </button>
+            <button aria-label="查看购物袋">
+              <ShoppingBag size={20} strokeWidth={1.7} />
+              <span>2</span>
+            </button>
+            <img alt="会员头像" src={avatar} />
+            <button className="menuButton" aria-label="打开菜单">
+              <Menu size={22} strokeWidth={1.7} />
+            </button>
           </div>
         </nav>
-        <div className="heroContent">
-          <span className="eyebrow">面向电商企业的 AI 员工操作系统</span>
-          <h1>让老板拥有一支可审批、可追踪、可学习的 AI 电商团队</h1>
-          <p>
-            从 AI客服、AI售后、AI运营三个岗位开始，把重复、标准化、可审批的工作交给 AI，目标逐步替代约 4 万元/月基础人力成本。
-          </p>
-          <div className="heroActions">
-            <a href="#demo">查看演示界面</a>
-            <a href="#trial">了解 7 天试用</a>
-          </div>
-        </div>
-      </section>
 
-      <section className="section">
-        <div className="sectionHeader">
-          <span>Cost Reduction</span>
-          <h2>企业真正要买的不是 AI，而是可验证的降本结果</h2>
-          <p>AI Commerce OS 优先处理电商团队中重复、标准化、可审批的工作，先省时间，再省人。</p>
+        <div className="heroGrid">
+          <article className="floatingCard topLeft">
+            <img alt="植萃能量胶囊小图" src={capsuleImage} />
+            <p>热卖单品</p>
+            <strong>¥169</strong>
+          </article>
+
+          <article className="floatingCard topRight">
+            <img alt="用户开箱视频封面" src={avatar} />
+            <span className="playDot">
+              <ChevronRight size={16} strokeWidth={2.2} />
+            </span>
+            <p>开箱与服用体验</p>
+          </article>
+
+          <div className="headline">
+            <span className="eyebrow">
+              <Sparkles size={16} strokeWidth={1.8} />
+              新品上市 / 30 天装
+            </span>
+            <h1>
+              每日自然能量
+              <br />
+              从一粒开始
+            </h1>
+            <p>
+              TerraElix 植萃营养胶囊，精选草本与矿物营养，帮助你在忙碌生活中保持清醒、平衡与轻盈。
+            </p>
+          </div>
+
+          <div className="productStage" aria-label="TerraElix 日常平衡套装展示">
+            <img className="texture" alt="" src={naturalTexture} />
+            <img className="mainProduct" alt="TerraElix 日常平衡套装" src={heroProduct} />
+          </div>
+
+          <article className="purchaseCard">
+            <span>爆款组合</span>
+            <h2>日常平衡套装</h2>
+            <div className="ratingLine" aria-label="评分 4.8 分">
+              <strong>4.8</strong>
+              <Star size={16} fill="currentColor" />
+              <small>12,860 条真实评价</small>
+            </div>
+            <div className="priceLine">
+              <strong>¥299</strong>
+              <small>订阅购 ¥254 / 月</small>
+            </div>
+            <div className="specs">
+              {specs.map((spec) => (
+                <span key={spec}>{spec}</span>
+              ))}
+            </div>
+            <div className="buyActions">
+              <a href="#products">
+                立即购买
+                <ArrowRight size={18} strokeWidth={1.8} />
+              </a>
+              <button>
+                <Heart size={18} strokeWidth={1.8} />
+                收藏
+              </button>
+            </div>
+          </article>
         </div>
-        <div className="costGrid">
-          {costs.map(([title, desc]) => (
-            <article className="card" key={title}>
-              <small>高频重复工作</small>
-              <h3>{title}</h3>
-              <p>{desc}</p>
-            </article>
-          ))}
-          <article className="card darkCard">
-            <small>目标替代成本</small>
-            <strong>约 4 万/月</strong>
-            <p>用真实数据验证 AI 能先替代多少重复工作，再逐步扩大自动化比例。</p>
+
+        <div className="heroFooter" id="benefits">
+          <article>
+            <strong>28K+</strong>
+            <p>会员正在使用 TerraElix 做日常营养管理</p>
+          </article>
+          <article className="centerPanel">
+            <PackageCheck size={34} strokeWidth={1.5} />
+            <div>
+              <strong>满 ¥199 包邮</strong>
+              <p>支持 7 天无理由退换，破损包赔</p>
+            </div>
+          </article>
+          <article>
+            <strong>4.8</strong>
+            <div className="footerStars" aria-label="五星评价">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <Star key={index} size={14} fill="currentColor" />
+              ))}
+            </div>
+            <p>来自高频复购用户的综合评分</p>
           </article>
         </div>
       </section>
 
-      <section className="section muted" id="product">
-        <div className="split">
-          <div className="sectionHeader">
-            <span>Product</span>
-            <h2>不是聊天机器人，也不是传统 ERP</h2>
-            <p>它是一套 AI 电商员工控制台：AI 负责执行低风险工作，老板负责关键审批，系统负责记录和学习。</p>
-          </div>
-          <div className="featureList">
-            {["AI员工化：每个 AI 都有职责、权限、工作记录和评估指标。", "审批优先：退款、赔偿、预算、投流和客户数据动作必须进入审批。", "数据验证：通过 Dataset、Replay 和 Evaluation 验证 AI 是否真的能工作。"].map((item) => (
-              <div className="feature" key={item}>{item}</div>
-            ))}
-          </div>
+      <section className="productSection" id="products">
+        <div className="sectionTitle">
+          <span>精选商品</span>
+          <h2>按你的生活节奏选择营养方案</h2>
         </div>
-      </section>
-
-      <section className="section">
-        <div className="sectionHeader">
-          <span>AI Employees</span>
-          <h2>三个 AI 员工，先接管最容易标准化的工作</h2>
-          <p>当前聚焦客服、售后、运营，不继续堆更多 Agent。目标是先证明可节省时间和成本。</p>
-        </div>
-        <div className="agentGrid">
-          {agents.map(([title, desc]) => (
-            <article className="card agent" key={title}>
-              <div className="agentIcon" />
-              <h3>{title}</h3>
-              <p>{desc}</p>
+        <div className="productGrid">
+          {products.map((product) => (
+            <article className="productCard" key={product.name}>
+              <div className="productImageWrap">
+                <img alt={product.name} src={product.image} />
+              </div>
+              <h3>{product.name}</h3>
+              <p>{product.desc}</p>
+              <div>
+                <strong>{product.price}</strong>
+                <button aria-label={`加入购物袋：${product.name}`}>
+                  <ShoppingBag size={18} strokeWidth={1.8} />
+                </button>
+              </div>
             </article>
           ))}
         </div>
       </section>
 
-      <section className="section muted" id="demo">
-        <div className="sectionHeader">
-          <span>Demo</span>
-          <h2>演示界面：看 AI 如何工作，而不是只看概念</h2>
-          <p>演示数据为静态样例，用来说明产品流程。真实上线后会接入商家订单、客户、售后和运营数据。</p>
-        </div>
-        <div className="demoBoard">
-          {demoRows.map(([title, input, output]) => (
-            <div className="demoRow" key={title}>
-              <strong>{title}</strong>
-              <span>{input}</span>
-              <p>{output}</p>
+      <section className="serviceStrip" id="service">
+        {benefits.map(({ title, desc, Icon }) => (
+          <article key={title}>
+            <Icon size={28} strokeWidth={1.7} />
+            <div>
+              <h3>{title}</h3>
+              <p>{desc}</p>
             </div>
-          ))}
-        </div>
+            <Check size={18} strokeWidth={2} />
+          </article>
+        ))}
       </section>
 
-      <section className="section" id="trial">
-        <div className="sectionHeader">
-          <span>Pilot</span>
-          <h2>7 天试用：先让 AI 跑起来，再看数据</h2>
-          <p>试用期不追求全自动，先追求可验证：节省多少时间、减少多少人工判断、沉淀多少学习样本。</p>
+      <section className="reviewSection" id="reviews">
+        <div>
+          <span>真实反馈</span>
+          <h2>“早上不用再靠第三杯咖啡硬撑。”</h2>
+          <p>
+            购物袋、规格、评价和售后信息都在首屏内完成决策，适合投放页、品牌首页或新品首发活动。
+          </p>
         </div>
-        <div className="steps">
-          {["导入商品、订单、客户、售后数据", "AI客服生成回复草稿，客服修正", "AI售后做风险分级和审批建议", "AI运营识别私域线索和投流草稿", "每周复盘自动化率、错误率和节省工时"].map((step, index) => (
-            <div className="step" key={step}>
-              <b>{index + 1}</b>
-              <p>{step}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="section muted">
-        <div className="split">
-          <div className="sectionHeader">
-            <span>Evaluation</span>
-            <h2>用指标判断 AI 是否值得继续扩大使用</h2>
-            <p>所有演示和试用都要回到同一件事：AI 有没有真正降低人工成本、减少风险、提高响应效率。</p>
-          </div>
-          <div className="metricGrid">
-            {metrics.map((metric) => <div className="metric" key={metric}>{metric}</div>)}
-          </div>
-        </div>
-      </section>
-
-      <section className="cta">
-        <h2>先用一家真实店铺验证降本</h2>
-        <p>导入历史数据，跑 AI客服和 AI售后，收集修改样本，一周后用指标判断是否继续扩大自动化。</p>
-        <a href="#demo">查看演示流程</a>
+        <a href="#top">
+          回到顶部选购
+          <ArrowRight size={18} strokeWidth={1.8} />
+        </a>
       </section>
     </main>
   );

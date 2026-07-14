@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./styles.css";
 
 export const metadata: Metadata = {
-  title: "AI Commerce OS | AI 电商员工操作系统",
-  description: "面向电商企业的 AI 员工操作系统，从客服、售后、运营开始验证真实降本。"
+  title: "TerraElix | 中文商品展示页",
+  description: "TerraElix 植萃营养胶囊中文电商商品展示页，包含商品、价格、卖点、评价与购买入口。"
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
