@@ -74,6 +74,9 @@ def build_html() -> str:
     .list { display:grid; gap:12px; }
     .item { border:1px solid var(--line); border-radius:12px; padding:14px; }
     .notice { border:1px solid #bfdbfe; border-radius:12px; background:#eff6ff; color:#1e3a8a; padding:14px; line-height:1.7; }
+    .resultPanel { display:none; margin-bottom:16px; border:1px solid #a7f3d0; border-radius:14px; background:#ecfdf5; color:#064e3b; padding:16px; line-height:1.75; }
+    .resultPanel.show { display:block; }
+    .resultPanel strong { display:block; margin-bottom:4px; color:#065f46; }
     @media (max-width:960px) { .login,.app,.metrics,.two,.three { grid-template-columns:1fr; } aside { position:relative; height:auto; } .loginHero { padding:42px 24px; } .loginHero h1 { font-size:40px; } main { padding:18px; } }
   </style>
 </head>
@@ -113,6 +116,7 @@ def build_html() -> str:
         </div>
         <span class="badge">试用数据 / 不执行真实动作</span>
       </header>
+      <div class="resultPanel" id="actionResult"></div>
       <div id="content"></div>
     </main>
   </section>
@@ -240,7 +244,27 @@ def build_html() -> str:
     }
     function closeDrawer() { document.getElementById("drawer").classList.remove("open"); }
     window.closeDrawer = closeDrawer;
-    function toastAction(action) { alert("已模拟执行：" + action + "\\n生产版会写入 API、Memory、Knowledge 和审计日志。"); }
+    const actionMessages = {
+      "auto-customer": ["已生成 AI 客服回复草稿", "系统会先生成草稿，不会直接发给客户。商家需要看一眼，点“同意”或“修改”。低风险问题未来可以设置自动发送。"],
+      "customer-learning": ["已记录一条商家修正", "商家每改一次，都会变成学习记录。以后遇到相同问题，AI 会优先按老板的说法回答。"],
+      "risk-check": ["已完成售后风险分级", "退款、赔偿、投诉、差评、金额相关问题已归为中高风险，必须人工确认，AI 不会擅自承诺。"],
+      "sop": ["已沉淀售后处理规则", "这条处理经验会进入售后 SOP，后续同类问题会先按 SOP 给出建议。"],
+      "copy-script": ["已生成私域跟进话术", "适合发给高意向客户：提醒优惠、解决顾虑、引导加企微或进群。正式版会记录转化结果。"],
+      "ad-plan": ["已生成投流计划草稿", "预算、出价、素材和人群只是草稿。涉及花钱的动作必须老板审批后才会执行。"],
+      "ops-log": ["已记录一条运营建议", "AI 发现详情页缺少发货和尺码说明，建议运营补充到商品页，减少重复咨询。"],
+      "approve": ["已模拟同意审批", "正式版会写入审批记录，然后才允许执行退款、补偿、群发或投流动作。"],
+      "edit": ["已进入修改模式", "老板可以改金额、改话术、改预算。修改后的版本会进入学习中心。"],
+      "reject": ["已模拟拒绝审批", "AI 会记录被拒绝原因，以后遇到类似高风险动作会更保守。"],
+      "preview-import": ["已生成导入预览", "这一步只检查文件格式、字段和样例数据，不会写入真实店铺。下一步是确认字段映射，然后才导入到 API、Memory、Knowledge 和审计日志。"],
+      "save-learning": ["已保存学习记录", "这条老板/客服的最终处理结果会成为训练样本，用于提升 AI 客服和 AI 售后的准确率。"]
+    };
+    function toastAction(action) {
+      const message = actionMessages[action] || ["已完成试用动作", "当前是演示环境，只展示流程，不会改动真实店铺。"];
+      const panel = document.getElementById("actionResult");
+      panel.innerHTML = `<strong>${message[0]}</strong><span>${message[1]}</span>`;
+      panel.classList.add("show");
+      panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
     setView(isLoggedIn());
   </script>
 </body>
