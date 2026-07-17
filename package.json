@@ -4,6 +4,7 @@
   "private": true,
   "workspaces": [
     "apps/web",
+    "apps/portfolio",
     "packages/shared"
   ],
   "scripts": {
@@ -11,10 +12,17 @@
     "build:web": "npm --workspace @ai-shop-os/web run build",
     "lint:web": "npm --workspace @ai-shop-os/web run lint",
     "typecheck:web": "npm --workspace @ai-shop-os/web run typecheck",
+    "dev:portfolio": "npm --workspace @min/ai-portfolio run dev",
+    "build:portfolio": "npm --workspace @min/ai-portfolio run build",
+    "preview:portfolio": "npm --workspace @min/ai-portfolio run preview",
     "api:dev": "python -m uvicorn apps.api.app.main:app --reload --port 8000",
-    "api:test": "python -m pytest apps/api/tests"
+    "api:test": "python -m pytest apps/api/tests",
+    "api:bootstrap": "node tools/run-api-module.cjs apps.api.app.infrastructure.production_bootstrap",
+    "api:daily-operations": "node tools/run-api-module.cjs apps.api.app.infrastructure.daily_operations_job"
   },
   "devDependencies": {
     "supabase": "^2.109.1"
   }
 }
+
+

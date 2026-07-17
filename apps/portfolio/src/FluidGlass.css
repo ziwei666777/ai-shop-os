@@ -1,0 +1,129 @@
+.fluidGlass {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.72;
+  mix-blend-mode: screen;
+  transition:
+    opacity 220ms ease,
+    filter 220ms ease,
+    transform 220ms ease;
+}
+
+.fluidGlass::before,
+.fluidGlass::after,
+.fluidGlass__caustic,
+.fluidGlass__sheen {
+  position: absolute;
+  content: "";
+  pointer-events: none;
+}
+
+.fluidGlass::before {
+  inset: -42%;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(255, 255, 255, 0.28), transparent 8%),
+    radial-gradient(circle at 74% 28%, rgba(126, 189, 255, 0.24), transparent 12%),
+    radial-gradient(circle at 42% 76%, rgba(95, 124, 255, 0.18), transparent 15%),
+    conic-gradient(from 125deg at 50% 50%, transparent 0deg, rgba(255, 255, 255, 0.18) 46deg, transparent 96deg, rgba(95, 124, 255, 0.14) 148deg, transparent 220deg);
+  filter: blur(18px) saturate(1.35);
+  transform: translate3d(-8%, -5%, 0) rotate(-8deg);
+  animation: fluidGlassDrift 10s ease-in-out infinite alternate;
+}
+
+.fluidGlass::after {
+  inset: 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: inherit;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent 28%),
+    linear-gradient(315deg, rgba(95, 124, 255, 0.18), transparent 34%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.26),
+    inset 0 -1px 0 rgba(95, 124, 255, 0.12);
+}
+
+.fluidGlass__caustic {
+  inset: 8%;
+  border-radius: inherit;
+  background:
+    linear-gradient(118deg, transparent 0%, rgba(255, 255, 255, 0.24) 15%, transparent 32%),
+    linear-gradient(290deg, transparent 0%, rgba(126, 189, 255, 0.18) 22%, transparent 42%);
+  filter: blur(10px);
+  transform: translateX(-18%) skewX(-10deg);
+  animation: fluidGlassSweep 5.6s ease-in-out infinite;
+}
+
+.fluidGlass__sheen {
+  top: 0;
+  left: 12%;
+  width: 42%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.86), transparent);
+  box-shadow: 0 0 24px rgba(126, 189, 255, 0.6);
+}
+
+.fluidGlass--nav {
+  opacity: 0.55;
+  mix-blend-mode: normal;
+}
+
+.fluidGlass--nav::before {
+  filter: blur(16px) saturate(1.25);
+}
+
+.fluidGlass--soft {
+  opacity: 0.48;
+}
+
+:where(.marqueeTile, .teamProfileCard, .teamOptionCard, .stackProjectCard, .serviceItem, .creatorNav):hover > .fluidGlass {
+  opacity: 0.98;
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+}
+
+:where(.marqueeTile, .teamProfileCard, .teamOptionCard, .stackProjectCard, .serviceItem, .creatorNav):hover > .fluidGlass .fluidGlass__caustic {
+  animation-duration: 3.2s;
+}
+
+@keyframes fluidGlassDrift {
+  0% {
+    transform: translate3d(-8%, -5%, 0) rotate(-8deg) scale(1);
+  }
+
+  100% {
+    transform: translate3d(7%, 4%, 0) rotate(10deg) scale(1.08);
+  }
+}
+
+@keyframes fluidGlassSweep {
+  0%,
+  100% {
+    opacity: 0.28;
+    transform: translateX(-18%) skewX(-10deg);
+  }
+
+  50% {
+    opacity: 0.68;
+    transform: translateX(24%) skewX(-10deg);
+  }
+}
+
+.reactBitsFluidGlass {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.reactBitsFluidGlass canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  filter: drop-shadow(0 32px 80px rgba(126, 189, 255, 0.34));
+}
