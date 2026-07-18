@@ -71,6 +71,21 @@ def load_daily_operations_source_data(session_provider: SessionProvider, company
                 ),
                 {"company_id": company_id},
             ).mappings().one()
+            import_evidence = session.execute(
+                text(
+                    """
+                    select platform::text as platform, import_mode, data_type, file_name, file_sha256,
+                           success_count, finished_at::text as finished_at
+                    from import_jobs
+                    where company_id = :company_id
+                      and status in ('succeeded', 'partial_success')
+                      and data_type in ('products', 'orders', 'after_sales')
+                    order by finished_at desc nulls last
+                    limit 20
+                    """
+                ),
+                {"company_id": company_id},
+            ).mappings().all()
     except SQLAlchemyError:
         return DailyOperationsSourceData(
             source_mode="unavailable",
@@ -99,9 +114,9 @@ def load_daily_operations_source_data(session_provider: SessionProvider, company
             warnings=("还没有可用于每日运营的商品或订单数据。",),
         )
 
-    pre_live = _build_pre_live_payload(products, company_id) if product_count else None
+    pre_live = _build_pre_live_payload(products, company_id, import_evidence) if product_count else None
     live_metrics = latest_live_metric_payload(company_id)
-    post_live = _build_post_live_payload(order_summary, after_sale_summary, products, company_id) if order_count else None
+    post_live = _build_post_live_payload(order_summary, after_sale_summary, products, company_id, import_evidence) if order_count else None
     warnings: list[str] = []
     if product_count == 0:
         warnings.append("缺少商品数据，无法执行开播前库存和价格检查。")
@@ -122,7 +137,7 @@ def load_daily_operations_source_data(session_provider: SessionProvider, company
     )
 
 
-def _build_pre_live_payload(products, company_id: str) -> dict:
+def _build_pre_live_payload(products, company_id: str, import_evidence) -> dict:
     return {
         "products": tuple(
             {
@@ -140,6 +155,7 @@ def _build_pre_live_payload(products, company_id: str) -> dict:
             "tables": ("products",),
             "company_id": company_id,
             "record_count": len(products),
+            "ingestion_evidence": _ingestion_evidence(import_evidence, "products"),
         },
         "script_text": "今日直播话术需按真实商品卖点讲解，不承诺绝对效果，不使用极限词。",
         "gift_ready": False,
@@ -147,7 +163,7 @@ def _build_pre_live_payload(products, company_id: str) -> dict:
     }
 
 
-def _build_post_live_payload(order_summary, after_sale_summary, products, company_id: str) -> dict:
+def _build_post_live_payload(order_summary, after_sale_summary, products, company_id: str, import_evidence) -> dict:
     order_count = int(order_summary["order_count"] or 0)
     sales_amount = float(order_summary["sales_amount"] or 0)
     refund_count = int(after_sale_summary["refund_count"] or 0)
@@ -168,8 +184,25 @@ def _build_post_live_payload(order_summary, after_sale_summary, products, compan
             "lookback_days": 30,
             "order_count": order_count,
             "after_sale_count": int(after_sale_summary["after_sale_count"] or 0),
+            "ingestion_evidence": _ingestion_evidence(import_evidence, "orders", "after_sales"),
         },
     }
+
+
+def _ingestion_evidence(rows, *data_types: str) -> tuple[dict[str, object], ...]:
+    return tuple(
+        {
+            "platform": str(row["platform"]),
+            "import_mode": str(row["import_mode"]),
+            "data_type": str(row["data_type"]),
+            "file_name": str(row["file_name"]) if row["file_name"] else None,
+            "file_sha256": str(row["file_sha256"]) if row["file_sha256"] else None,
+            "success_count": int(row["success_count"] or 0),
+            "finished_at": str(row["finished_at"]) if row["finished_at"] else None,
+        }
+        for row in rows
+        if str(row["data_type"]) in data_types
+    )
 
 
 def _live_price(price: object) -> float:
