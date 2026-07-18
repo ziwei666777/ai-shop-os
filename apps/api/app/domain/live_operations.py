@@ -55,7 +55,6 @@ class AgentSavingsWork:
     saved_yuan: int
     performance_score: int
     proof: str
-    input_snapshot: dict
 
 
 @dataclass(frozen=True)
