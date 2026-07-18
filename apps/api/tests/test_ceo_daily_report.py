@@ -82,6 +82,49 @@ def test_ceo_daily_report_keeps_untraceable_live_workflow_as_demo() -> None:
     assert body["saved_money_today_yuan"] > 0
 
 
+def test_ceo_daily_report_keeps_unproven_database_rows_as_demo() -> None:
+    from apps.api.app.infrastructure.daily_operations_runner import run_daily_operations
+
+    run_daily_operations(
+        pre_live={
+            "products": ({"title": "Imported product", "inventory_count": 70, "safe_stock": 20, "regular_price": 199, "live_price": 129},),
+            "evidence_source": {"source_type": "postgres", "tables": ("products",)},
+        }
+    )
+
+    response = TestClient(app).get("/v1/ceo/daily-report")
+
+    assert response.status_code == 200
+    assert response.json()["data_status"] == "demo_estimate"
+
+
+def test_ceo_daily_report_marks_hashed_file_import_as_real_data() -> None:
+    from apps.api.app.infrastructure.daily_operations_runner import run_daily_operations
+
+    run_daily_operations(
+        pre_live={
+            "products": ({"title": "Imported product", "inventory_count": 70, "safe_stock": 20, "regular_price": 199, "live_price": 129},),
+            "evidence_source": {
+                "source_type": "postgres",
+                "tables": ("products",),
+                "ingestion_evidence": (
+                    {
+                        "import_job_id": "import-products-1",
+                        "platform": "taobao",
+                        "import_mode": "file",
+                        "file_name": "products-2026-07-18.csv",
+                        "file_sha256": "a" * 64,
+                    },
+                ),
+            },
+        }
+    )
+
+    response = TestClient(app).get("/v1/ceo/daily-report")
+
+    assert response.status_code == 200
+    assert response.json()["data_status"] == "real_workflow_logs"
+
 def test_ceo_daily_report_marks_traceable_live_snapshot_as_real_data() -> None:
     from apps.api.app.infrastructure.daily_operations_runner import run_daily_operations
 

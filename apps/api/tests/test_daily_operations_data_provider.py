@@ -86,6 +86,7 @@ def test_daily_operations_source_preserves_successful_file_import_evidence() -> 
         after_sales={"after_sale_count": 3, "refund_count": 2, "complaint_count": 1},
         import_jobs=(
             {
+                "import_job_id": "import-products-1",
                 "platform": "taobao",
                 "import_mode": "file",
                 "data_type": "products",
@@ -95,6 +96,7 @@ def test_daily_operations_source_preserves_successful_file_import_evidence() -> 
                 "finished_at": "2026-07-18T08:00:00+00:00",
             },
             {
+                "import_job_id": "import-orders-1",
                 "platform": "taobao",
                 "import_mode": "file",
                 "data_type": "orders",
@@ -111,6 +113,7 @@ def test_daily_operations_source_preserves_successful_file_import_evidence() -> 
     assert source.pre_live is not None
     assert source.pre_live["evidence_source"]["ingestion_evidence"] == (
         {
+            "import_job_id": "import-products-1",
             "platform": "taobao",
             "import_mode": "file",
             "data_type": "products",
@@ -121,6 +124,7 @@ def test_daily_operations_source_preserves_successful_file_import_evidence() -> 
         },
     )
     assert source.post_live is not None
+    assert source.post_live["evidence_source"]["ingestion_evidence"][0]["import_job_id"] == "import-orders-1"
     assert source.post_live["evidence_source"]["ingestion_evidence"][0]["file_sha256"] == "b" * 64
 
 def test_daily_operations_source_marks_empty_database_without_fake_payload() -> None:
@@ -151,6 +155,7 @@ def test_daily_operations_source_reads_latest_live_metric_snapshot() -> None:
     record_live_metric_snapshot(
         "company-1",
         {
+            "import_job_id": "import-products-1",
             "platform": "taobao",
             "stream_external_id": "taobao-live-1",
             "observed_at": datetime(2026, 7, 18, 8, 0, tzinfo=timezone.utc),

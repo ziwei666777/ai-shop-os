@@ -88,8 +88,28 @@ def _has_traceable_merchant_evidence(input_snapshot: dict) -> bool:
     if not isinstance(evidence, dict):
         return False
     if evidence.get("source_type") == "postgres":
-        return bool(evidence.get("tables"))
+        records = evidence.get("ingestion_evidence")
+        return bool(evidence.get("tables")) and isinstance(records, (list, tuple)) and any(
+            _has_traceable_ingestion_record(record) for record in records
+        )
     return bool(evidence.get("snapshot_id") and evidence.get("source_reference"))
+
+
+def _has_traceable_ingestion_record(record: object) -> bool:
+    if not isinstance(record, dict):
+        return False
+    if not (record.get("import_job_id") and record.get("platform")):
+        return False
+    if record.get("import_mode") == "api_sync":
+        return True
+    file_sha256 = record.get("file_sha256")
+    return (
+        record.get("import_mode") == "file"
+        and bool(record.get("file_name"))
+        and isinstance(file_sha256, str)
+        and len(file_sha256) == 64
+        and all(character in "0123456789abcdef" for character in file_sha256.lower())
+    )
 
 
 def _after_sale_decision_risks(after_sale_decisions: dict[str, int | str]) -> tuple[CeoReportRisk, ...]:

@@ -74,7 +74,7 @@ def load_daily_operations_source_data(session_provider: SessionProvider, company
             import_evidence = session.execute(
                 text(
                     """
-                    select platform::text as platform, import_mode, data_type, file_name, file_sha256,
+                    select id::text as import_job_id, platform::text as platform, import_mode, data_type, file_name, file_sha256,
                            success_count, finished_at::text as finished_at
                     from import_jobs
                     where company_id = :company_id
@@ -192,6 +192,7 @@ def _build_post_live_payload(order_summary, after_sale_summary, products, compan
 def _ingestion_evidence(rows, *data_types: str) -> tuple[dict[str, object], ...]:
     return tuple(
         {
+            "import_job_id": str(row["import_job_id"]),
             "platform": str(row["platform"]),
             "import_mode": str(row["import_mode"]),
             "data_type": str(row["data_type"]),
