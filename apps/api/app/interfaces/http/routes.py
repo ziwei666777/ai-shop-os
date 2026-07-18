@@ -26,6 +26,7 @@ from apps.api.app.application.use_cases import (
     SendCustomerReply,
     TakeoverCustomerMessage,
 )
+from apps.api.app.domain.market_intelligence import PublicMarketSignal
 from apps.api.app.application.agent_routing import RouteAgentEvent
 from apps.api.app.domain.agent_routing import AgentRoutingInput
 from apps.api.app.infrastructure.after_sale_decision_workflow import (
@@ -37,6 +38,7 @@ from apps.api.app.infrastructure.commerce_connectors import ShopifyConnector
 from apps.api.app.infrastructure.evaluation_engine import run_evaluation_summary
 from apps.api.app.infrastructure.ceo_report_engine import get_ceo_daily_report
 from apps.api.app.infrastructure.daily_operations_runner import run_daily_operations
+from apps.api.app.infrastructure.market_intelligence_engine import analyze_public_market_signals
 from apps.api.app.infrastructure.live_operation_engine import get_live_operation_summary, get_savings_summary
 from apps.api.app.infrastructure.live_metric_snapshots import record_live_metric_snapshot
 from apps.api.app.infrastructure.live_operation_workflows import (
@@ -91,6 +93,8 @@ from apps.api.app.interfaces.http.schemas import (
     LearningEventResponse,
     LiveMetricScanRequest,
     LiveMetricSnapshotIngestRequest,
+    MarketIntelligenceRequest,
+    MarketIntelligenceResponse,
     LiveMetricSnapshotResponse,
     LiveOperationSummaryResponse,
     LivePostReviewReportResponse,
@@ -191,6 +195,30 @@ async def strategy_audit() -> StrategyAuditResponse:
     return StrategyAuditResponse.model_validate(audit, from_attributes=True)
 
 
+
+@router.post("/v1/market-intelligence/analyze", response_model=MarketIntelligenceResponse)
+async def market_intelligence_analyze(payload: MarketIntelligenceRequest) -> MarketIntelligenceResponse:
+    try:
+        report = analyze_public_market_signals(
+            tuple(
+                PublicMarketSignal(
+                    source_name=signal.source_name,
+                    source_url=signal.source_url,
+                    observed_at=signal.observed_at,
+                    signal_kind=signal.signal_kind,
+                    platform=signal.platform,
+                    category=signal.category,
+                    product_name=signal.product_name,
+                    price_yuan=signal.price_yuan,
+                    engagement_score=signal.engagement_score,
+                    review_sentiment=signal.review_sentiment,
+                )
+                for signal in payload.signals
+            )
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    return MarketIntelligenceResponse.model_validate(report, from_attributes=True)
 @router.post("/v1/workflows/refund-collaboration/run", response_model=RefundCollaborationResponse)
 async def refund_collaboration_run(payload: RefundCollaborationRequest) -> RefundCollaborationResponse:
     run = run_refund_collaboration_workflow(

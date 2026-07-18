@@ -587,6 +587,40 @@ class StrategyAuditResponse(BaseModel):
     next_p0_actions: tuple[str, ...]
 
 
+
+class PublicMarketSignalRequest(BaseModel):
+    source_name: str = Field(min_length=1, max_length=120)
+    source_url: str = Field(pattern=r"^https?://")
+    observed_at: str = Field(min_length=1, max_length=80)
+    signal_kind: Literal["official_ranking", "public_listing", "public_content"]
+    platform: str = Field(min_length=1, max_length=40)
+    category: str = Field(min_length=1, max_length=80)
+    product_name: str = Field(min_length=1, max_length=160)
+    price_yuan: float = Field(ge=0)
+    engagement_score: int = Field(ge=0, le=100)
+    review_sentiment: Literal["positive", "neutral", "negative"]
+
+
+class MarketIntelligenceRequest(BaseModel):
+    signals: tuple[PublicMarketSignalRequest, ...] = Field(min_length=1, max_length=50)
+
+
+class MarketIntelligenceResponse(BaseModel):
+    category: str
+    data_status: Literal["public_market_signal"]
+    data_status_reason: str
+    source_count: int
+    price_floor_yuan: float
+    price_ceiling_yuan: float
+    median_price_yuan: float
+    opportunity_score: int
+    risk_score: int
+    recommendation: str
+    next_actions: tuple[str, ...]
+    proof_points: tuple[str, ...]
+    merchant_roi_eligible: bool
+    replaced_role: str
+    estimated_saved_minutes: int
 class RefundCollaborationRequest(BaseModel):
     source_message_id: str = Field(min_length=1, max_length=200)
     customer_message: str = Field(min_length=1, max_length=5000)
