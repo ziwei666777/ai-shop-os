@@ -1,3 +1,5 @@
+﻿from apps.api.app.domain.ceo_report import CeoDailyReport
+from apps.api.app.domain.daily_operations import DailyOperationsRun
 from apps.api.app.domain.models import (
     AfterSaleCase,
     Agent,
@@ -9,6 +11,7 @@ from apps.api.app.domain.models import (
     DraftReply,
     LearningEvent,
 )
+from apps.api.app.domain.replay import ReplaySummary
 from apps.api.app.domain.repositories import (
     AfterSaleRepository,
     AgentRepository,
@@ -18,6 +21,8 @@ from apps.api.app.domain.repositories import (
     FeedbackMetricRepository,
     LearningRepository,
 )
+from apps.api.app.domain.validation import EvaluationSummary, SimulationSummary, TrainingCenterSummary
+from apps.api.app.domain.live_operations import LiveOperationSummary, SavingsSummary
 
 
 class GetDashboardSummary:
@@ -58,6 +63,33 @@ class ListCustomerInbox:
 
     async def execute(self) -> tuple[CustomerInboxItem, ...]:
         return await self.repository.list_inbox()
+
+
+class IngestCustomerMessage:
+    def __init__(self, repository: CustomerAgentRepository) -> None:
+        self.repository = repository
+
+    async def execute(
+        self,
+        company_id: str,
+        platform: str,
+        platform_message_id: str,
+        customer_name: str,
+        content: str,
+        channel: str,
+        customer_external_id: str | None = None,
+        order_external_id: str | None = None,
+    ) -> CustomerInboxItem:
+        return await self.repository.ingest_message(
+            company_id,
+            platform,
+            platform_message_id,
+            customer_name,
+            content,
+            channel,
+            customer_external_id,
+            order_external_id,
+        )
 
 
 class DraftCustomerReply:
@@ -145,3 +177,65 @@ class ListConnectorStatuses:
 
     async def execute(self) -> tuple[ConnectorStatusView, ...]:
         return await self.repository.list_statuses()
+
+
+class RunReplaySummary:
+    def __init__(self, runner) -> None:
+        self.runner = runner
+
+    async def execute(self) -> ReplaySummary:
+        return self.runner()
+
+
+class RunEvaluationSummary:
+    def __init__(self, runner) -> None:
+        self.runner = runner
+
+    async def execute(self) -> EvaluationSummary:
+        return self.runner()
+
+
+class GetTrainingCenterSummary:
+    def __init__(self, reader) -> None:
+        self.reader = reader
+
+    async def execute(self) -> TrainingCenterSummary:
+        return self.reader()
+
+
+class RunSimulationSummary:
+    def __init__(self, runner) -> None:
+        self.runner = runner
+
+    async def execute(self) -> SimulationSummary:
+        return self.runner()
+
+
+class GetLiveOperationSummary:
+    def __init__(self, reader) -> None:
+        self.reader = reader
+
+    async def execute(self) -> LiveOperationSummary:
+        return self.reader()
+
+
+class GetSavingsSummary:
+    def __init__(self, reader) -> None:
+        self.reader = reader
+
+    async def execute(self) -> SavingsSummary:
+        return self.reader()
+
+class GetCeoDailyReport:
+    def __init__(self, reader) -> None:
+        self.reader = reader
+
+    async def execute(self) -> CeoDailyReport:
+        return self.reader()
+
+class RunDailyOperations:
+    def __init__(self, runner) -> None:
+        self.runner = runner
+
+    async def execute(self, **kwargs) -> DailyOperationsRun:
+        return self.runner(**kwargs)

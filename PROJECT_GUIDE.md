@@ -1,5 +1,41 @@
 # AI Commerce OS - Codex Development Guide
 
+## 2026 V2 战略升级
+
+AI Shop OS 不再定位为 AI客服、AI售后、AI知识库或 AI工具平台。
+
+新的定位是：
+
+**AI Employee OS（企业 AI 数字员工操作系统）**
+
+目标不是让 AI 回答问题，而是让 AI 像员工一样每天主动完成工作，并且能计算今天帮老板节约多少钱。
+
+当前三个月最高优先级：
+
+1. AI Live Operation Agent（直播运营助理）
+2. CEO Agent 老板日报
+3. Savings Engine 省钱引擎
+4. ROI Engine 投入产出比
+
+暂停继续投入：
+
+- 新 AI 客服页面
+- 新聊天功能
+- 新 Prompt 页面
+- 新知识库页面
+- 新 Dashboard 页面
+
+开发任何功能前必须先回答：
+
+1. 这个功能替代哪个岗位？
+2. 一天能节约多少时间？
+3. 一个月能节约多少人工？
+4. 老板为什么愿意付钱？
+5. 是否进入真实 Workflow？
+6. 是否能计算节省金额？
+
+回答不了，就不要开发。
+
 ## 一、项目定位
 
 AI Commerce OS 不是 AI 客服，不是 ERP，也不是普通 SaaS。

@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import cast
 from uuid import uuid4
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from apps.api.app.domain.models import (
@@ -53,6 +53,7 @@ from apps.api.app.infrastructure.database import (
     OrderRecord,
     PlatformConnectionRecord,
 )
+from apps.api.app.infrastructure.customer_reply_engine import build_customer_draft_reply
 
 
 SessionProvider = Callable[[], Session]
@@ -170,6 +171,101 @@ class PostgresCustomerAgentRepository(CustomerAgentRepository):
     def __init__(self, session_provider: SessionProvider) -> None:
         self.session_provider = session_provider
 
+    async def ingest_message(
+        self,
+        company_id: str,
+        platform: str,
+        platform_message_id: str,
+        customer_name: str,
+        content: str,
+        channel: str,
+        customer_external_id: str | None = None,
+        order_external_id: str | None = None,
+    ) -> CustomerInboxItem:
+        intent, decision, confidence = _classify_customer_message(content)
+        requires_human = decision == "human_review"
+        with self.session_provider() as session:
+            connection_id = _ensure_bridge_connection(session, company_id, platform)
+            customer_id = _ensure_bridge_customer(
+                session,
+                company_id,
+                platform,
+                connection_id,
+                customer_external_id or f"bridge:{platform}:{customer_name}",
+                customer_name,
+            )
+            order_row = None
+            if order_external_id:
+                order_row = session.execute(
+                    text("""
+                      select id::text, status
+                      from orders
+                      where company_id=:company_id
+                        and platform_connection_id=:connection_id
+                        and external_id=:external_id
+                      limit 1
+                    """),
+                    {"company_id": company_id, "connection_id": connection_id, "external_id": order_external_id},
+                ).mappings().one_or_none()
+            conversation_id = str(uuid4())
+            session.execute(
+                text("""
+                  insert into conversations (id, company_id, customer_id, agent_id, channel, status)
+                  values (:id, :company_id, :customer_id, null, :channel, 'open')
+                """),
+                {"id": conversation_id, "company_id": company_id, "customer_id": customer_id, "channel": channel},
+            )
+            message_id = str(uuid4())
+            row = session.execute(
+                text("""
+                  insert into messages (
+                    id, company_id, conversation_id, sender_type, content, confidence, requires_human_review,
+                    platform, platform_message_id, intent, automation_decision, merchant_edited
+                  ) values (
+                    :id, :company_id, :conversation_id, 'customer', :content, :confidence, :requires_human,
+                    cast(:platform as connector_platform), :platform_message_id, cast(:intent as message_intent),
+                    cast(:decision as automation_decision), false
+                  )
+                  on conflict (company_id, platform, platform_message_id)
+                    where platform_message_id is not null
+                  do update set
+                    content=excluded.content,
+                    confidence=excluded.confidence,
+                    requires_human_review=excluded.requires_human_review,
+                    intent=excluded.intent,
+                    automation_decision=excluded.automation_decision,
+                    updated_at=now()
+                  returning id::text, created_at::text
+                """),
+                {
+                    "id": message_id,
+                    "company_id": company_id,
+                    "conversation_id": conversation_id,
+                    "content": content,
+                    "confidence": confidence,
+                    "requires_human": requires_human,
+                    "platform": platform,
+                    "platform_message_id": platform_message_id,
+                    "intent": intent,
+                    "decision": decision,
+                },
+            ).mappings().one()
+            session.commit()
+            return CustomerInboxItem(
+                id=str(row["id"]),
+                platform=_platform(platform),
+                customer_name=customer_name,
+                channel=channel,
+                content=content,
+                intent=_message_intent(intent),
+                order_external_id=order_external_id,
+                logistics_status=str(order_row["status"]) if order_row else None,
+                confidence=confidence,
+                automation_decision=_automation_decision(decision),
+                status="needs_human" if requires_human else "pending",
+                created_at=str(row["created_at"]),
+            )
+
     async def list_inbox(self) -> tuple[CustomerInboxItem, ...]:
         with self.session_provider() as session:
             rows = (
@@ -205,16 +301,25 @@ class PostgresCustomerAgentRepository(CustomerAgentRepository):
             if message is None:
                 return None
 
-            if message.automation_decision == "human_review":
-                return DraftReply(message_id, "这个问题需要商家确认后再回复。", _num(message.confidence), "human_review", "命中人工确认规则。", True)
+            conversation = session.get(ConversationRecord, message.conversation_id)
+            order = None
+            if conversation and conversation.customer_id:
+                order = session.scalar(
+                    select(OrderRecord)
+                    .where(OrderRecord.customer_id == conversation.customer_id)
+                    .order_by(OrderRecord.updated_at.desc())
+                    .limit(1)
+                )
 
-            return DraftReply(
-                message_id,
-                message.ai_draft_content or "您好，已收到您的消息，我们会根据订单和物流信息继续为您跟进。",
-                _num(message.confidence),
-                "auto_reply",
-                "属于低风险自动回复范围。",
-                False,
+            return build_customer_draft_reply(
+                message_id=message_id,
+                content=message.content,
+                confidence=_num(message.confidence),
+                automation_decision=message.automation_decision,
+                intent=message.intent,
+                order_external_id=order.external_id if order else None,
+                logistics_status=order.status if order else None,
+                company_id=message.company_id,
             )
 
     async def mark_sent(self, message_id: str, final_content: str | None = None) -> CustomerInboxItem | None:
@@ -284,6 +389,78 @@ class PostgresAfterSaleRepository(AfterSaleRepository):
             approval_required=row.approval_required,
             created_at=datetime.now(timezone.utc).isoformat(),
         )
+
+
+def _ensure_bridge_connection(session: Session, company_id: str, platform: str) -> str:
+    row = session.execute(
+        text("""
+          select id::text
+          from platform_connections
+          where company_id=:company_id and platform::text=:platform and shop_identifier='external-message-bridge'
+          limit 1
+        """),
+        {"company_id": company_id, "platform": platform},
+    ).scalar_one_or_none()
+    if row:
+        return str(row)
+    connection_id = str(uuid4())
+    session.execute(
+        text("""
+          insert into platform_connections (id, company_id, platform, status, shop_identifier, scopes, authorization_mode)
+          values (:id, :company_id, cast(:platform as connector_platform), 'connected',
+                  'external-message-bridge', array['message_ingest'], 'external_bridge')
+        """),
+        {"id": connection_id, "company_id": company_id, "platform": platform},
+    )
+    return connection_id
+
+
+def _ensure_bridge_customer(
+    session: Session,
+    company_id: str,
+    platform: str,
+    connection_id: str,
+    external_id: str,
+    name: str,
+) -> str:
+    row = session.execute(
+        text("""
+          select id::text
+          from customers
+          where company_id=:company_id and platform_connection_id=:connection_id and external_id=:external_id
+          limit 1
+        """),
+        {"company_id": company_id, "connection_id": connection_id, "external_id": external_id},
+    ).scalar_one_or_none()
+    if row:
+        session.execute(
+            text("update customers set name=:name, updated_at=now() where id=:id"),
+            {"id": row, "name": name},
+        )
+        return str(row)
+    customer_id = str(uuid4())
+    session.execute(
+        text("""
+          insert into customers (id, company_id, platform_connection_id, platform, external_id, name, source_metadata)
+          values (:id, :company_id, :connection_id, cast(:platform as connector_platform), :external_id, :name,
+                  '{"source":"external_message_bridge"}'::jsonb)
+        """),
+        {"id": customer_id, "company_id": company_id, "connection_id": connection_id, "platform": platform, "external_id": external_id, "name": name},
+    )
+    return customer_id
+
+
+def _classify_customer_message(content: str) -> tuple[str, str, float]:
+    # 真实接入先保守：有钱、有投诉、有退款风险的消息必须人工确认，避免 AI 乱承诺。
+    if any(keyword in content for keyword in ("退款", "退货", "赔", "补偿", "投诉", "差评", "金额", "便宜点")):
+        return "compensation", "human_review", 0.68
+    if any(keyword in content for keyword in ("物流", "快递", "发货", "到哪", "单号")):
+        return "logistics", "auto_reply", 0.88
+    if any(keyword in content for keyword in ("订单", "下单", "付款", "拍下")):
+        return "order", "auto_reply", 0.86
+    if any(keyword in content for keyword in ("尺码", "颜色", "库存", "有没有", "适合")):
+        return "faq", "auto_reply", 0.84
+    return "unknown", "human_review", 0.55
 
 
 class PostgresLearningRepository(LearningRepository):

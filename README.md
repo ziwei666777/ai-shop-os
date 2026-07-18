@@ -1,43 +1,81 @@
 # AI Shop OS
 
-AI Shop OS 是一套 AI 电商员工操作系统，让老板管理多个可协作、可审批、可追踪的 AI 员工。
+AI Shop OS is an open-source prototype for an **AI Employee OS for ecommerce teams**. It is not another AI customer-service chat widget. The goal is to turn repeatable ecommerce operations into auditable workflows that can reduce manual work, expose operational risk, and calculate how much money the AI team saved today.
 
-## 当前 Sprint
+The current product strategy focuses on Chinese ecommerce merchants and the highest-cost daily workflow: **AI Live Operation Agent** for livestream commerce, supported by CEO daily reports, after-sale collaboration, warehouse notifications, and a Savings Engine.
 
-Sprint 1 只完成基础架构、数据库、登录、Dashboard 和 AI Employee 框架。
+## Why This Exists
 
-当前已补充 AI客服与 AI售后商家试用版工作台。
+Many ecommerce teams still need people to manually check livestream inventory, coupons, pricing, scripts, product order, refund risk, warehouse follow-up, daily sales, ad spend, and after-sale costs. AI Shop OS explores a different product shape:
 
-暂不实现复杂 RAG、多轮 Agent 自主决策或非授权外部平台抓取。
+- Not chat first, workflow first.
+- Not more pages, more complete operating loops.
+- Not more agents, better agent collaboration.
+- Not vague automation, measurable saved time and saved money.
 
-## Monorepo 结构
+The long-term goal is to help a 20-person ecommerce operation run with a smaller team by giving owners AI employees that proactively work, escalate decisions, and leave evidence.
+
+## Current Scope
+
+P0 capabilities currently implemented or in progress:
+
+- AI Live Operation Agent: pre-live checks, live metric scans, post-live reviews, workflow logs, and savings evidence.
+- CEO Agent: daily report with money saved, risk, priority actions, AI employee performance, and proof points.
+- Savings Engine and ROI Engine: estimates saved minutes, saved money, monthly savings, and annual ROI.
+- Refund collaboration workflow: customer issue -> after-sale decision -> boss approval -> warehouse notification -> Savings -> CEO daily report.
+- Production readiness gate: blocks fake production logs until database tables, PostgreSQL storage modes, WMS/ERP sender, and real credentials are ready.
+
+The project intentionally avoids new customer-service chat pages, generic prompt pages, unrelated dashboards, and unauthorized scraping of ecommerce platforms.
+
+## Architecture
 
 ```text
-apps/web              Next.js 前端
-apps/api              FastAPI 后端
-packages/shared       前后端共享常量和类型
-supabase/migrations   PostgreSQL + pgvector 迁移
-docs                  架构和数据库文档
+apps/web              Next.js ecommerce owner console
+apps/api              FastAPI backend and workflow engines
+packages/shared       shared constants and types
+supabase/migrations   PostgreSQL/Supabase migrations
+docs                  product, workflow, deployment, and operating docs
 ```
 
-## 本地运行
-
-要求：
+Core backend APIs include:
 
 ```text
-Node.js 18.17 或更高版本
-npm 9 或更高版本
-Python 3.11 或更高版本
+GET  /health/ready
+GET  /v1/strategy/audit
+GET  /v1/ceo/daily-report
+GET  /v1/savings/summary
+POST /v1/daily-operations/run
+POST /v1/live-operations/pre-live-check
+POST /v1/live-operations/live-metric-scan
+POST /v1/live-operations/post-live-review
+POST /v1/workflows/refund-collaboration/run
+POST /v1/approvals/{approval_id}/decision
+POST /v1/warehouse-notifications/dispatch
 ```
 
-前端：
+## Local Development
+
+Requirements:
+
+```text
+Node.js 18.17+
+npm 9+
+Python 3.11+
+```
+
+Install frontend dependencies:
 
 ```bash
 npm install
+```
+
+Run the web app:
+
+```bash
 npm run dev:web
 ```
 
-后端：
+Run the API:
 
 ```bash
 python -m venv .venv
@@ -46,62 +84,74 @@ pip install -r apps/api/requirements.txt
 npm run api:dev
 ```
 
-默认访问：
+Default local URLs:
 
 ```text
 Web: http://localhost:3000
 API: http://localhost:8000
 ```
 
-## 商家试用入口
+## Validation
 
-```text
-/ai-employees/ai-customer/workbench
-/ai-employees/ai-after-sale/workbench
-/settings/integrations
-/settings/data-collection
+Run the full API test suite:
+
+```bash
+npm run api:test
 ```
 
-## Supabase
+Run the current core evidence-chain tests:
 
-已执行数据库结构 migration，当前项目连接说明见：
-
-```text
-docs/supabase-setup.md
+```bash
+python -m pytest \
+  apps/api/tests/test_refund_collaboration_workflow.py \
+  apps/api/tests/test_strategy_audit.py \
+  apps/api/tests/test_live_operations_and_savings.py \
+  apps/api/tests/test_daily_operations_job.py \
+  apps/api/tests/test_ceo_daily_report.py \
+  apps/api/tests/test_production_bootstrap.py \
+  apps/api/tests/test_health.py
 ```
 
-模板复用与安全审计见：
+The latest local backend verification is `87 passed` across `apps/api/tests`.
 
-```text
-docs/template-audit.md
-```
+## Production Evidence Chain
 
-后端 `DATABASE_URL` 未填真实数据库密码前，会自动使用内存 fallback，保证本地开发和页面预览不被阻塞。
+AI Shop OS separates demo-safe local behavior from production evidence. In production mode, daily AI work should not write fake savings logs unless the evidence chain is ready.
 
-商家试用演示数据位于：
+Production readiness expects:
 
-```text
-supabase/seed/202607100001_pilot_trial_data.sql
-```
+- `DATABASE_URL` configured for Supabase/PostgreSQL.
+- Migrations executed for `live_workflow_runs`, `approval_records`, `after_sale_decision_outcomes`, `warehouse_notifications`, and `ceo_daily_report_snapshots`.
+- Storage modes set to PostgreSQL for live workflow logs, approval records, after-sale decisions, and CEO report snapshots.
+- `WAREHOUSE_NOTIFICATION_DELIVERY_MODE=http_api` with real WMS/ERP URL and API key.
+- `/health/ready` returning `evidence_chain_ready=true`.
 
-## 核心原则
+See `docs/production-deployment.md` and `NEXT_TASK.md` for the current production checklist.
 
-- Everything is Agent
-- Everything is Workflow
-- Everything is Memory
-- Everything is Knowledge
-- Everything is Tool
-- Everything is Observable
-- Everything is Approval
+## Open Source Status
 
-## 长期维护文件
+This repository is being prepared for public open-source release and for the OpenAI **Codex for Open Source** maintainer-support program. See:
 
-后续 Codex 开发必须优先阅读：
+- `docs/open-source-release-checklist.md`
+- `docs/openai-codex-for-open-source-application.md`
 
-```text
-PROJECT_GUIDE.md   项目总指导
-PROJECT_STATE.md   当前开发状态
-NEXT_TASK.md       下一步唯一开发任务
-CHANGELOG.md       每次开发记录
-IDEAS.md           暂不开发的新想法
-```
+OpenAI's official application page says selected maintainers may receive six months of ChatGPT Pro, Codex Security access, and API credits for qualifying open-source maintenance work: <https://openai.com/form/codex-for-oss/>
+
+## Contributing
+
+Contributions are welcome after the repository is made public. Please read `CONTRIBUTING.md`, `SECURITY.md`, and `CODE_OF_CONDUCT.md` first.
+
+Strategic rule for every contribution:
+
+1. Which human role does this replace or reduce?
+2. How much time does it save per day?
+3. How much labor does it save per month?
+4. Why would a business owner pay for it?
+5. Can it enter a real workflow and leave evidence?
+6. Can it calculate saved money?
+
+If the answer is unclear, the feature should not be built yet.
+
+## License
+
+MIT License. See `LICENSE`.

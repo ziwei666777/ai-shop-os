@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi import Header, Request
 
 from apps.api.app.application.use_cases import (
@@ -7,6 +7,8 @@ from apps.api.app.application.use_cases import (
     DecideAfterSaleCase,
     DraftCustomerReply,
     GetAfterSaleCase,
+    GetCeoDailyReport,
+    IngestCustomerMessage,
     ListAgentLogs,
     ListAgents,
     ListAfterSaleCases,
@@ -14,13 +16,46 @@ from apps.api.app.application.use_cases import (
     ListCustomerInbox,
     ListFeedbackMetrics,
     RecordLearningEvent,
+    GetTrainingCenterSummary,
+    GetLiveOperationSummary,
+    GetSavingsSummary,
+    RunEvaluationSummary,
+    RunReplaySummary,
+    RunSimulationSummary,
+    RunDailyOperations,
     SendCustomerReply,
     TakeoverCustomerMessage,
 )
 from apps.api.app.application.agent_routing import RouteAgentEvent
 from apps.api.app.domain.agent_routing import AgentRoutingInput
+from apps.api.app.infrastructure.after_sale_decision_workflow import (
+    dispatch_queued_warehouse_notifications,
+    run_after_sale_decision_workflow,
+)
 from apps.api.app.infrastructure.agent_runtime_provider import agent_workflow
 from apps.api.app.infrastructure.commerce_connectors import ShopifyConnector
+from apps.api.app.infrastructure.evaluation_engine import run_evaluation_summary
+from apps.api.app.infrastructure.ceo_report_engine import get_ceo_daily_report
+from apps.api.app.infrastructure.daily_operations_runner import run_daily_operations
+from apps.api.app.infrastructure.live_operation_engine import get_live_operation_summary, get_savings_summary
+from apps.api.app.infrastructure.live_metric_snapshots import record_live_metric_snapshot
+from apps.api.app.infrastructure.live_operation_workflows import (
+    run_live_metric_scan,
+    run_post_live_review,
+    run_pre_live_check,
+)
+from apps.api.app.infrastructure.live_workflow_log_store import (
+    list_live_workflow_runs,
+    record_live_workflow_report,
+    record_post_live_review,
+)
+from apps.api.app.infrastructure.approval_records import decide_approval_record, list_pending_approvals
+from apps.api.app.infrastructure.replay_engine import run_replay_summary
+from apps.api.app.infrastructure.refund_business_evidence import get_refund_business_evidence
+from apps.api.app.infrastructure.refund_collaboration_workflow import run_refund_collaboration_workflow
+from apps.api.app.infrastructure.simulation_engine import run_simulation_summary
+from apps.api.app.infrastructure.strategy_audit import get_strategy_audit
+from apps.api.app.infrastructure.training_center import commit_training_asset, get_training_center_summary
 from apps.api.app.infrastructure.repository_provider import (
     after_sale_repository,
     agent_repository,
@@ -37,21 +72,47 @@ from apps.api.app.interfaces.http.schemas import (
     AgentResponse,
     AfterSaleCaseResponse,
     AfterSaleDecisionRequest,
+    ApprovalDecisionRequest,
+    ApprovalDecisionResponse,
     ApprovalResponse,
     ConnectorStatusResponse,
+    CeoDailyReportResponse,
+    CustomerMessageIngestRequest,
     CustomerInboxItemResponse,
     CustomerReplySendRequest,
+    DailyOperationsRunRequest,
+    DailyOperationsRunResponse,
     DashboardSummaryResponse,
     DraftReplyResponse,
+    EvaluationSummaryResponse,
     AgentFeedbackMetricResponse,
     KnowledgeSourceResponse,
     LearningEventRequest,
     LearningEventResponse,
+    LiveMetricScanRequest,
+    LiveMetricSnapshotIngestRequest,
+    LiveMetricSnapshotResponse,
+    LiveOperationSummaryResponse,
+    LivePostReviewReportResponse,
+    LiveWorkflowReportResponse,
+    LiveWorkflowRunResponse,
     OAuthStartRequest,
     OAuthStartResponse,
+    PostLiveReviewRequest,
+    PreLiveCheckRequest,
+    RefundCollaborationRequest,
+    RefundCollaborationResponse,
+    ReplaySummaryResponse,
+    SavingsSummaryResponse,
+    SimulationSummaryResponse,
+    StrategyAuditResponse,
+    TrainingAssetCandidateResponse,
+    TrainingCenterSummaryResponse,
     WebhookIngestResponse,
+    WarehouseNotificationDispatchResponse,
     WorkflowResponse,
 )
+from apps.api.app.interfaces.http.auth import CompanyContext, require_company_context, require_customer_message_ingest_context, require_merchant_bridge_context
 
 router = APIRouter()
 
@@ -80,6 +141,153 @@ async def dashboard_summary() -> DashboardSummaryResponse:
     return DashboardSummaryResponse.model_validate(summary, from_attributes=True)
 
 
+@router.get("/v1/ceo/daily-report", response_model=CeoDailyReportResponse)
+async def ceo_daily_report() -> CeoDailyReportResponse:
+    report = await GetCeoDailyReport(get_ceo_daily_report).execute()
+    return CeoDailyReportResponse.model_validate(report, from_attributes=True)
+
+@router.get("/v1/replay/summary", response_model=ReplaySummaryResponse)
+async def replay_summary(
+    x_company_id: str = Header(default="00000000-0000-0000-0000-000000000001", alias="X-Company-ID")
+) -> ReplaySummaryResponse:
+    summary = await RunReplaySummary(lambda: run_replay_summary(x_company_id)).execute()
+    return ReplaySummaryResponse.model_validate(summary, from_attributes=True)
+
+
+@router.get("/v1/evaluation/summary", response_model=EvaluationSummaryResponse)
+async def evaluation_summary(x_company_id: str = Header(default="00000000-0000-0000-0000-000000000001", alias="X-Company-ID")) -> EvaluationSummaryResponse:
+    summary = await RunEvaluationSummary(lambda: run_evaluation_summary(x_company_id)).execute()
+    return EvaluationSummaryResponse.model_validate(summary, from_attributes=True)
+
+
+@router.get("/v1/training-center/summary", response_model=TrainingCenterSummaryResponse)
+async def training_center_summary(
+    x_company_id: str = Header(default="00000000-0000-0000-0000-000000000001", alias="X-Company-ID")
+) -> TrainingCenterSummaryResponse:
+    summary = await GetTrainingCenterSummary(lambda: get_training_center_summary(x_company_id)).execute()
+    return TrainingCenterSummaryResponse.model_validate(summary, from_attributes=True)
+
+
+@router.post("/v1/training-center/assets/{candidate_id}/commit", response_model=TrainingAssetCandidateResponse)
+async def commit_training_center_asset(
+    candidate_id: str,
+    x_company_id: str = Header(default="00000000-0000-0000-0000-000000000001", alias="X-Company-ID"),
+) -> TrainingAssetCandidateResponse:
+    candidate = commit_training_asset(x_company_id, candidate_id)
+    if candidate is None:
+        raise HTTPException(status_code=404, detail="训练候选资产不存在，或当前仍需复核。")
+    return TrainingAssetCandidateResponse.model_validate(candidate, from_attributes=True)
+
+
+@router.get("/v1/simulation/summary", response_model=SimulationSummaryResponse)
+async def simulation_summary() -> SimulationSummaryResponse:
+    summary = await RunSimulationSummary(run_simulation_summary).execute()
+    return SimulationSummaryResponse.model_validate(summary, from_attributes=True)
+
+
+@router.get("/v1/strategy/audit", response_model=StrategyAuditResponse)
+async def strategy_audit() -> StrategyAuditResponse:
+    audit = get_strategy_audit()
+    return StrategyAuditResponse.model_validate(audit, from_attributes=True)
+
+
+@router.post("/v1/workflows/refund-collaboration/run", response_model=RefundCollaborationResponse)
+async def refund_collaboration_run(payload: RefundCollaborationRequest) -> RefundCollaborationResponse:
+    run = run_refund_collaboration_workflow(
+        source_message_id=payload.source_message_id,
+        customer_message=payload.customer_message,
+        order_amount_yuan=payload.order_amount_yuan,
+        refund_amount_yuan=payload.refund_amount_yuan,
+        delivered=payload.delivered,
+        evidence_count=payload.evidence_count,
+        inventory_available=payload.inventory_available,
+        complaint_risk=payload.complaint_risk,
+        business_evidence=get_refund_business_evidence(payload.order_external_id),
+    )
+    return RefundCollaborationResponse.model_validate(run, from_attributes=True)
+
+
+@router.get("/v1/live-operations/summary", response_model=LiveOperationSummaryResponse)
+async def live_operation_summary() -> LiveOperationSummaryResponse:
+    summary = await GetLiveOperationSummary(get_live_operation_summary).execute()
+    return LiveOperationSummaryResponse.model_validate(summary, from_attributes=True)
+
+
+@router.get("/v1/savings/summary", response_model=SavingsSummaryResponse)
+async def savings_summary() -> SavingsSummaryResponse:
+    summary = await GetSavingsSummary(get_savings_summary).execute()
+    return SavingsSummaryResponse.model_validate(summary, from_attributes=True)
+
+
+
+
+@router.post("/v1/daily-operations/run", response_model=DailyOperationsRunResponse)
+async def run_daily_operations_route(payload: DailyOperationsRunRequest) -> DailyOperationsRunResponse:
+    run = await RunDailyOperations(run_daily_operations).execute(
+        trigger=payload.trigger,
+        pre_live=payload.pre_live.model_dump() if payload.pre_live else None,
+        live_metrics=payload.live_metrics.model_dump() if payload.live_metrics else None,
+        post_live=payload.post_live.model_dump() if payload.post_live else None,
+    )
+    return DailyOperationsRunResponse.model_validate(run, from_attributes=True)
+
+@router.get("/v1/live-operations/runs", response_model=tuple[LiveWorkflowRunResponse, ...])
+async def live_workflow_runs() -> tuple[LiveWorkflowRunResponse, ...]:
+    runs = list_live_workflow_runs()
+    return tuple(LiveWorkflowRunResponse.model_validate(run, from_attributes=True) for run in runs)
+
+@router.post("/v1/live-operations/pre-live-check", response_model=LiveWorkflowReportResponse)
+async def pre_live_check(payload: PreLiveCheckRequest) -> LiveWorkflowReportResponse:
+    report = run_pre_live_check(
+        products=tuple(item.model_dump() for item in payload.products),
+        coupons=tuple(item.model_dump() for item in payload.coupons),
+        script_text=payload.script_text,
+        gift_ready=payload.gift_ready,
+        product_order_ready=payload.product_order_ready,
+    )
+    record_live_workflow_report("开播前检查", report, input_snapshot=payload.model_dump())
+    return LiveWorkflowReportResponse.model_validate(report, from_attributes=True)
+
+
+@router.post("/v1/live-operations/metric-snapshots", response_model=LiveMetricSnapshotResponse, status_code=201)
+async def ingest_live_metric_snapshot(
+    payload: LiveMetricSnapshotIngestRequest,
+    context: CompanyContext = Depends(require_merchant_bridge_context),
+) -> LiveMetricSnapshotResponse:
+    snapshot = record_live_metric_snapshot(context.company_id, payload.model_dump())
+    return LiveMetricSnapshotResponse.model_validate(snapshot, from_attributes=True)
+
+@router.post("/v1/live-operations/live-metric-scan", response_model=LiveWorkflowReportResponse)
+async def live_metric_scan(payload: LiveMetricScanRequest) -> LiveWorkflowReportResponse:
+    report = run_live_metric_scan(
+        online_users=payload.online_users,
+        conversion_rate=payload.conversion_rate,
+        retention_rate=payload.retention_rate,
+        comment_count=payload.comment_count,
+        like_count=payload.like_count,
+        product_click_rate=payload.product_click_rate,
+        inventory_delta=payload.inventory_delta,
+        abnormal_order_count=payload.abnormal_order_count,
+    )
+    record_live_workflow_report("直播中扫描", report, input_snapshot=payload.model_dump())
+    return LiveWorkflowReportResponse.model_validate(report, from_attributes=True)
+
+
+@router.post("/v1/live-operations/post-live-review", response_model=LivePostReviewReportResponse)
+async def post_live_review(payload: PostLiveReviewRequest) -> LivePostReviewReportResponse:
+    report = run_post_live_review(
+        sales_amount_yuan=payload.sales_amount_yuan,
+        order_count=payload.order_count,
+        viewer_count=payload.viewer_count,
+        refund_count=payload.refund_count,
+        top_product_title=payload.top_product_title,
+        negative_comment_count=payload.negative_comment_count,
+        host_script_score=payload.host_script_score,
+    )
+    record_post_live_review("下播复盘", report, input_snapshot=payload.model_dump())
+    return LivePostReviewReportResponse.model_validate(report, from_attributes=True)
+
+
 @router.get("/v1/agents", response_model=tuple[AgentResponse, ...])
 async def list_agents() -> tuple[AgentResponse, ...]:
     agents = await ListAgents(agent_repository()).execute()
@@ -102,11 +310,36 @@ async def list_agent_logs(agent_id: str) -> tuple[AgentLogResponse, ...]:
 
 @router.get("/v1/approvals/pending", response_model=tuple[ApprovalResponse, ...])
 async def pending_approvals() -> tuple[ApprovalResponse, ...]:
-    return (
-        ApprovalResponse(id="approval-1", title="退款金额超过自动处理阈值", risk_level="medium", status="pending"),
-        ApprovalResponse(id="approval-2", title="广告预算调整需要确认", risk_level="high", status="pending"),
+    approvals = list_pending_approvals()
+    return tuple(
+        ApprovalResponse(
+            id=approval.id,
+            title=approval.title,
+            risk_level=approval.risk_level,
+            status=approval.status,
+        )
+        for approval in approvals
     )
 
+
+
+@router.post("/v1/approvals/{approval_id}/decision", response_model=ApprovalDecisionResponse)
+async def decide_approval(approval_id: str, payload: ApprovalDecisionRequest) -> ApprovalDecisionResponse:
+    approval = decide_approval_record(approval_id, payload.decision, payload.note)
+    if approval is None:
+        raise HTTPException(status_code=404, detail="Approval record not found")
+    outcome = run_after_sale_decision_workflow(
+        approval=approval,
+        decision=payload.decision,
+        action=payload.action,
+        note=payload.note,
+    )
+    return ApprovalDecisionResponse.model_validate(outcome, from_attributes=True)
+
+@router.post("/v1/warehouse-notifications/dispatch", response_model=WarehouseNotificationDispatchResponse)
+async def dispatch_warehouse_notifications(limit: int = 20) -> WarehouseNotificationDispatchResponse:
+    result = dispatch_queued_warehouse_notifications(limit=limit)
+    return WarehouseNotificationDispatchResponse.model_validate(result, from_attributes=True)
 
 @router.get("/v1/workflows", response_model=tuple[WorkflowResponse, ...])
 async def workflows() -> tuple[WorkflowResponse, ...]:
@@ -157,6 +390,24 @@ async def shopify_webhook(
 async def customer_inbox() -> tuple[CustomerInboxItemResponse, ...]:
     items = await ListCustomerInbox(customer_agent_repository()).execute()
     return tuple(CustomerInboxItemResponse.model_validate(item, from_attributes=True) for item in items)
+
+
+@router.post("/v1/customer-agent/external-messages", response_model=CustomerInboxItemResponse, status_code=201)
+async def ingest_external_customer_message(
+    payload: CustomerMessageIngestRequest,
+    context: CompanyContext = Depends(require_customer_message_ingest_context),
+) -> CustomerInboxItemResponse:
+    item = await IngestCustomerMessage(customer_agent_repository()).execute(
+        context.company_id,
+        payload.platform,
+        payload.platform_message_id,
+        payload.customer_name,
+        payload.content,
+        payload.channel,
+        payload.customer_external_id,
+        payload.order_external_id,
+    )
+    return CustomerInboxItemResponse.model_validate(item, from_attributes=True)
 
 
 @router.post("/v1/customer-agent/messages/{message_id}/draft-reply", response_model=DraftReplyResponse)
@@ -224,3 +475,6 @@ async def learning_event(payload: LearningEventRequest) -> LearningEventResponse
 async def feedback_metrics() -> tuple[AgentFeedbackMetricResponse, ...]:
     metrics = await ListFeedbackMetrics(feedback_metric_repository()).execute()
     return tuple(AgentFeedbackMetricResponse.model_validate(metric, from_attributes=True) for metric in metrics)
+
+
+

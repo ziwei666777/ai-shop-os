@@ -1,0 +1,6 @@
+data_type,external_id,title,sku,price,inventory_count,customer_name,status,total_amount,paid_at,order_external_id,quantity,unit_price,carrier_name,tracking_number,case_type,reason
+orders,DY202607130001,,,,,李女士,已付款,129.00,2026-07-13 11:00,,,,,,
+products,DY-P-001,直播间爆款连衣裙,S-WHITE,129.00,80,,,,,,,,,,
+customers,DY-U-001,,,,,李女士,直播间客户,,,,,,,,,
+shipments,DY-S-001,,,,,李女士,已揽收,,2026-07-13 16:00,DY202607130001,,,圆通快递,YT202607130001,,
+after_sales,DY-AS-001,,,,,李女士,待举证,,2026-07-13 17:20,DY202607130001,,,,complaint,客户反馈商品有瑕疵

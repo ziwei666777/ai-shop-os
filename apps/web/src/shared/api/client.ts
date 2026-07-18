@@ -1,4 +1,4 @@
-import {
+﻿import {
   fallbackAfterSaleCases,
   fallbackAgentLogs,
   fallbackAgents,
@@ -10,6 +10,7 @@ import {
   fallbackOrders,
   fallbackProducts,
 } from "./fallback-data";
+import { fallbackCeoDailyReport, fallbackLiveOperationSummary, fallbackSavingsSummary } from "./employee-os-fallback-data";
 import type {
   AfterSaleCase,
   Agent,
@@ -21,15 +22,25 @@ import type {
   DraftReply,
   LearningEvent,
   LearningEventInput,
+  TrainingAssetCandidate,
   AfterSaleDecision,
   CatalogPage,
+  CeoDailyReport,
   CommercePlatform,
   CustomerItem,
+  DailyOperationsRun,
   ImportDataType,
   ImportJob,
   ImportPreview,
+  LiveOperationSummary,
+  LivePostReviewReport,
+  LiveWorkflowReport,
+  LiveMetricScanInput,
   OrderItem,
   ProductItem,
+  PostLiveReviewInput,
+  PreLiveCheckInput,
+  SavingsSummary,
 } from "./types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
@@ -100,6 +111,34 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
   return request<DashboardSummary>("/v1/dashboard/summary", fallbackDashboardSummary);
 }
 
+export async function getCeoDailyReport(): Promise<CeoDailyReport> {
+  return request<CeoDailyReport>("/v1/ceo/daily-report", fallbackCeoDailyReport);
+}
+
+export async function getLiveOperationSummary(): Promise<LiveOperationSummary> {
+  return request<LiveOperationSummary>("/v1/live-operations/summary", fallbackLiveOperationSummary);
+}
+
+export async function getSavingsSummary(): Promise<SavingsSummary> {
+  return request<SavingsSummary>("/v1/savings/summary", fallbackSavingsSummary);
+}
+
+export async function runDailyOperations(): Promise<ApiMutationResult<DailyOperationsRun>> {
+  return mutate<DailyOperationsRun>("/v1/daily-operations/run", { trigger: "manual" });
+}
+export async function runPreLiveCheck(input: PreLiveCheckInput): Promise<ApiMutationResult<LiveWorkflowReport>> {
+  return mutate<LiveWorkflowReport>("/v1/live-operations/pre-live-check", input);
+}
+
+export async function runLiveMetricScan(input: LiveMetricScanInput): Promise<ApiMutationResult<LiveWorkflowReport>> {
+  return mutate<LiveWorkflowReport>("/v1/live-operations/live-metric-scan", input);
+}
+
+export async function runPostLiveReview(input: PostLiveReviewInput): Promise<ApiMutationResult<LivePostReviewReport>> {
+  return mutate<LivePostReviewReport>("/v1/live-operations/post-live-review", input);
+}
+
+
 export async function listAgents(): Promise<Agent[]> {
   return request<Agent[]>("/v1/agents", fallbackAgents);
 }
@@ -148,6 +187,10 @@ export async function decideAfterSaleCase(
 
 export async function recordLearningEvent(input: LearningEventInput): Promise<ApiMutationResult<LearningEvent>> {
   return mutate<LearningEvent>("/v1/learning-events", input);
+}
+
+export async function commitTrainingAsset(candidateId: string): Promise<ApiMutationResult<TrainingAssetCandidate>> {
+  return mutate<TrainingAssetCandidate>(`/v1/training-center/assets/${candidateId}/commit`);
 }
 
 export async function listConnectorStatuses(): Promise<ConnectorStatus[]> {
@@ -226,3 +269,5 @@ async function sendFile<T>(
     return { data: null, error: "无法连接后端服务，请确认 API 已启动后重试。" };
   }
 }
+
+

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import secrets
 
 import httpx
 from fastapi import Header, HTTPException
@@ -52,3 +53,24 @@ async def require_company_context(
         raise HTTPException(status_code=403, detail="你无权访问这家公司的数据。")
     return CompanyContext(user_id=user_id, company_id=x_company_id)
 
+
+async def require_merchant_bridge_context(
+    authorization: str = Header(default=""),
+    x_company_id: str = Header(default="", alias="X-Company-ID"),
+    x_aicos_bridge_key: str = Header(default="", alias="X-AICOS-Bridge-Key"),
+) -> CompanyContext:
+    settings = get_settings()
+    if settings.merchant_bridge_api_key and x_aicos_bridge_key:
+        if not secrets.compare_digest(x_aicos_bridge_key, settings.merchant_bridge_api_key):
+            raise HTTPException(status_code=401, detail="商家桥接密钥无效。")
+        company_id = x_company_id or settings.merchant_bridge_company_id or settings.local_company_id
+        return CompanyContext(user_id="merchant-message-bridge", company_id=company_id)
+    return await require_company_context(authorization, x_company_id)
+
+
+async def require_customer_message_ingest_context(
+    authorization: str = Header(default=""),
+    x_company_id: str = Header(default="", alias="X-Company-ID"),
+    x_aicos_bridge_key: str = Header(default="", alias="X-AICOS-Bridge-Key"),
+) -> CompanyContext:
+    return await require_merchant_bridge_context(authorization, x_company_id, x_aicos_bridge_key)

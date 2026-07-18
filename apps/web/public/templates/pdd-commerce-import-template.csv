@@ -1,0 +1,6 @@
+data_type,external_id,title,sku,price,inventory_count,customer_name,status,total_amount,paid_at,order_external_id,quantity,unit_price,carrier_name,tracking_number,case_type,reason
+orders,PDD202607130001,,,,,王先生,待发货,59.90,2026-07-13 09:40,,,,,,
+products,PDD-P-001,夏季速干短袖,XL-BLACK,59.90,300,,,,,,,,,,
+customers,PDD-U-001,,,,,王先生,价格敏感客户,,,,,,,,,
+shipments,PDD-S-001,,,,,王先生,运输中,,2026-07-13 13:15,PDD202607130001,,,申通快递,ST202607130001,,
+after_sales,PDD-AS-001,,,,,王先生,待审核,,2026-07-13 18:05,PDD202607130001,,,,return,七天无理由退货

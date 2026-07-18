@@ -1,0 +1,6 @@
+data_type,external_id,title,sku,price,inventory_count,customer_name,status,total_amount,paid_at,order_external_id,quantity,unit_price,carrier_name,tracking_number,case_type,reason
+orders,XY202607130001,,,,,海边的风,已完成,88.00,2026-07-13 12:30,,,,,,
+products,XY-P-001,样衣清仓连衣裙,ONE-SIZE,88.00,5,,,,,,,,,,
+customers,XY-U-001,,,,,海边的风,新客户,,,,,,,,,
+shipments,XY-S-001,,,,,海边的风,已签收,,2026-07-13 15:00,XY202607130001,,,菜鸟裹裹,CN202607130001,,
+after_sales,XY-AS-001,,,,,海边的风,待沟通,,2026-07-13 19:00,XY202607130001,,,,compensation,客户反馈轻微色差要求补偿

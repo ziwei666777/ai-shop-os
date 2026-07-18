@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 from pathlib import Path
 
 from apps.api.app.domain.commerce_imports import ImportDataType, ImportPreview
@@ -12,45 +13,45 @@ SAMPLE_ROW_LIMIT = 5
 
 FIELD_DEFINITIONS: dict[ImportDataType, dict[str, tuple[str, ...]]] = {
     "products": {
-        "external_id": ("商品id", "商品编号", "宝贝id", "product_id", "item_id"),
-        "title": ("商品名称", "商品标题", "宝贝标题", "title", "name"),
-        "sku": ("商家编码", "sku", "sku编码"),
-        "price": ("价格", "售价", "price"),
-        "inventory_count": ("库存", "可售库存", "stock", "inventory"),
+        "external_id": ("商品id", "商品编号", "宝贝id", "product_id", "item_id", "id", "productId", "productSn"),
+        "title": ("商品名称", "商品标题", "宝贝标题", "title", "name", "productName"),
+        "sku": ("商家编码", "sku", "sku编码", "productSkuCode", "productSn"),
+        "price": ("价格", "售价", "price", "productPrice", "productRealPrice"),
+        "inventory_count": ("库存", "可售库存", "stock", "inventory", "realStock"),
     },
     "orders": {
-        "external_id": ("订单号", "主订单号", "order_id", "订单编号"),
-        "customer_name": ("买家昵称", "客户名称", "收件人", "buyer_name"),
+        "external_id": ("订单号", "主订单号", "order_id", "订单编号", "orderSn", "order_sn"),
+        "customer_name": ("买家昵称", "客户名称", "收件人", "buyer_name", "memberUsername", "memberNickname", "receiverName"),
         "status": ("订单状态", "交易状态", "status"),
-        "total_amount": ("订单金额", "实付金额", "payment", "total_amount"),
-        "paid_at": ("付款时间", "支付时间", "paid_at"),
+        "total_amount": ("订单金额", "实付金额", "payment", "total_amount", "payAmount", "totalAmount"),
+        "paid_at": ("付款时间", "支付时间", "paid_at", "paymentTime", "createTime"),
     },
     "order_items": {
-        "external_id": ("子订单号", "订单明细id", "order_item_id"),
-        "order_external_id": ("订单号", "主订单号", "order_id"),
-        "title": ("商品名称", "商品标题", "title"),
-        "sku": ("商家编码", "sku", "sku编码"),
-        "quantity": ("数量", "购买数量", "quantity"),
-        "unit_price": ("单价", "商品单价", "unit_price"),
+        "external_id": ("子订单号", "订单明细id", "order_item_id", "id"),
+        "order_external_id": ("订单号", "主订单号", "order_id", "orderSn"),
+        "title": ("商品名称", "商品标题", "title", "productName"),
+        "sku": ("商家编码", "sku", "sku编码", "productSkuCode", "productSn"),
+        "quantity": ("数量", "购买数量", "quantity", "productQuantity", "productCount"),
+        "unit_price": ("单价", "商品单价", "unit_price", "productPrice", "productRealPrice"),
     },
     "customers": {
-        "external_id": ("客户id", "买家id", "buyer_id", "customer_id"),
-        "name": ("客户名称", "买家昵称", "昵称", "name"),
+        "external_id": ("客户id", "买家id", "buyer_id", "customer_id", "memberId", "memberUsername"),
+        "name": ("客户名称", "买家昵称", "昵称", "name", "memberNickname", "memberUsername", "receiverName"),
         "tags": ("标签", "客户标签", "tags"),
     },
     "shipments": {
         "external_id": ("物流单id", "发货单号", "shipment_id"),
-        "order_external_id": ("订单号", "主订单号", "order_id"),
-        "carrier_name": ("物流公司", "快递公司", "carrier"),
-        "tracking_number": ("运单号", "物流单号", "tracking_number"),
+        "order_external_id": ("订单号", "主订单号", "order_id", "orderSn"),
+        "carrier_name": ("物流公司", "快递公司", "carrier", "deliveryCompany"),
+        "tracking_number": ("运单号", "物流单号", "tracking_number", "deliverySn"),
         "status": ("物流状态", "发货状态", "status"),
     },
     "after_sales": {
-        "external_id": ("售后单号", "退款单号", "after_sale_id"),
-        "order_external_id": ("订单号", "主订单号", "order_id"),
-        "case_type": ("售后类型", "退款类型", "type"),
+        "external_id": ("售后单号", "退款单号", "after_sale_id", "returnApplyId", "refund_id", "id"),
+        "order_external_id": ("订单号", "主订单号", "order_id", "orderSn"),
+        "case_type": ("售后类型", "退款类型", "type", "returnType"),
         "status": ("售后状态", "退款状态", "status"),
-        "reason": ("售后原因", "退款原因", "reason"),
+        "reason": ("售后原因", "退款原因", "reason", "description"),
     },
 }
 
@@ -79,8 +80,10 @@ def parse_import_preview(file_name: str, content: bytes, data_type: ImportDataTy
         headers, rows, encoding = _parse_csv(content)
     elif suffix == ".xlsx":
         headers, rows, encoding = _parse_xlsx(content)
+    elif suffix == ".json":
+        headers, rows, encoding = _parse_json(content)
     else:
-        raise ImportFileError("只支持 CSV 或 .xlsx 文件，不接受宏文件和旧版 .xls。")
+        raise ImportFileError("只支持 CSV、.xlsx 或 JSON 文件，不接受宏文件和旧版 .xls。")
 
     if not headers:
         raise ImportFileError("没有读取到表头，请确认第一行是字段名称。")
@@ -105,7 +108,9 @@ def parse_import_rows(file_name: str, content: bytes) -> list[dict[str, str]]:
         return _parse_csv(content)[1]
     if suffix == ".xlsx":
         return _parse_xlsx(content, row_limit=None)[1]
-    raise ImportFileError("只支持 CSV 或 .xlsx 文件。")
+    if suffix == ".json":
+        return _parse_json(content, row_limit=None)[1]
+    raise ImportFileError("只支持 CSV、.xlsx 或 JSON 文件。")
 
 
 def _parse_csv(content: bytes) -> tuple[list[str], list[dict[str, str]], str]:
@@ -151,6 +156,52 @@ def _parse_xlsx(content: bytes, row_limit: int | None = SAMPLE_ROW_LIMIT) -> tup
         return [header for header in headers if header], rows, "xlsx"
     except Exception as error:
         raise ImportFileError("Excel 文件无法读取，请确认文件未损坏且扩展名为 .xlsx。") from error
+
+
+def _parse_json(content: bytes, row_limit: int | None = SAMPLE_ROW_LIMIT) -> tuple[list[str], list[dict[str, str]], str]:
+    try:
+        payload = json.loads(content.decode("utf-8-sig"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ImportFileError("JSON 文件无法读取，请使用 UTF-8 编码并确认格式正确。") from error
+
+    if isinstance(payload, dict):
+        for key in ("items", "rows", "data"):
+            value = payload.get(key)
+            if isinstance(value, list):
+                payload = value
+                break
+
+    if not isinstance(payload, list):
+        raise ImportFileError("JSON 顶层必须是数组，或包含 items、rows、data 数组字段。")
+
+    rows: list[dict[str, str]] = []
+    headers: list[str] = []
+    seen_headers: set[str] = set()
+    for item in payload:
+        if not isinstance(item, dict):
+            raise ImportFileError("JSON 数组中的每一项都必须是对象。")
+        row: dict[str, str] = {}
+        for key, value in item.items():
+            header = str(key).strip()
+            if not header:
+                continue
+            if header not in seen_headers:
+                seen_headers.add(header)
+                headers.append(header)
+            row[header] = _stringify_json_value(value)
+        rows.append(row)
+        if row_limit is not None and len(rows) >= row_limit:
+            break
+
+    return headers, rows, "json"
+
+
+def _stringify_json_value(value: object) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, (str, int, float, bool)):
+        return str(value).strip()
+    return json.dumps(value, ensure_ascii=False, separators=(",", ":"))
 
 
 def _suggest_mapping(headers: list[str], data_type: ImportDataType) -> dict[str, str]:

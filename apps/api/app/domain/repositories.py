@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 
+from apps.api.app.domain.live_operations import LivePostReviewReport, LiveWorkflowReport, LiveWorkflowRun
 from apps.api.app.domain.models import (
     AfterSaleCase,
     Agent,
@@ -34,6 +35,20 @@ class AgentRepository(ABC):
 
 
 class CustomerAgentRepository(ABC):
+    @abstractmethod
+    async def ingest_message(
+        self,
+        company_id: str,
+        platform: str,
+        platform_message_id: str,
+        customer_name: str,
+        content: str,
+        channel: str,
+        customer_external_id: str | None = None,
+        order_external_id: str | None = None,
+    ) -> CustomerInboxItem:
+        """接收真实平台或桥接工具推送的客户消息，统一进入 AI 客服收件箱。"""
+
     @abstractmethod
     async def list_inbox(self) -> tuple[CustomerInboxItem, ...]:
         """读取平台消息收件箱。"""
@@ -89,3 +104,24 @@ class ConnectorRepository(ABC):
     @abstractmethod
     async def list_statuses(self) -> tuple[ConnectorStatusView, ...]:
         """读取平台连接状态。"""
+
+class LiveWorkflowRunRepository(ABC):
+    @abstractmethod
+    def record_live_workflow_report(self, workflow_name: str, report: LiveWorkflowReport, input_snapshot: dict | None = None) -> LiveWorkflowRun:
+        """记录直播 Workflow 执行结果，用于证明 AI 做了哪些工作、节省了多少钱。"""
+
+    @abstractmethod
+    def record_post_live_review(self, workflow_name: str, report: LivePostReviewReport, input_snapshot: dict | None = None) -> LiveWorkflowRun:
+        """记录下播复盘结果，让复盘也进入 Savings Engine 统计。"""
+
+    @abstractmethod
+    def list_runs(self, limit: int = 50) -> tuple[LiveWorkflowRun, ...]:
+        """按最新在前读取直播 Workflow 日志。"""
+
+    @abstractmethod
+    def summarize(self) -> dict[str, int | float | str]:
+        """给 Savings Engine 提供聚合后的节省时间和金额。"""
+
+    @abstractmethod
+    def clear_for_test(self) -> None:
+        """测试时清空日志，生产实现不得暴露给普通业务入口。"""

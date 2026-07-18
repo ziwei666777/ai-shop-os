@@ -1,0 +1,40 @@
+﻿name: Feature request
+description: Propose a workflow improvement for AI Shop OS
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: role
+    attributes:
+      label: Human role reduced or replaced
+      description: Which ecommerce job does this reduce?
+    validations:
+      required: true
+  - type: textarea
+    id: savings
+    attributes:
+      label: Time and money saved
+      description: Estimate daily time saved, monthly labor saved, and why a business owner would pay.
+    validations:
+      required: true
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Workflow evidence
+      description: What real workflow evidence will this create or improve?
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - AI Live Operation Agent
+        - CEO Agent
+        - Savings/ROI Engine
+        - Refund collaboration / After-sale
+        - Warehouse/WMS evidence
+        - Production readiness
+        - Other
+    validations:
+      required: true

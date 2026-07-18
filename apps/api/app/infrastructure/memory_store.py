@@ -23,6 +23,7 @@ from apps.api.app.domain.repositories import (
     FeedbackMetricRepository,
     LearningRepository,
 )
+from apps.api.app.infrastructure.customer_reply_engine import build_customer_draft_reply
 
 
 AGENTS: tuple[Agent, ...] = (
@@ -189,6 +190,36 @@ class MemoryAgentRepository(AgentRepository):
 
 
 class MemoryCustomerAgentRepository(CustomerAgentRepository):
+    async def ingest_message(
+        self,
+        company_id: str,
+        platform: str,
+        platform_message_id: str,
+        customer_name: str,
+        content: str,
+        channel: str,
+        customer_external_id: str | None = None,
+        order_external_id: str | None = None,
+    ) -> CustomerInboxItem:
+        del company_id, customer_external_id
+        intent, decision, confidence = _classify_customer_message(content)
+        item = CustomerInboxItem(
+            id=platform_message_id,
+            platform=cast("ConnectorPlatform", platform),
+            customer_name=customer_name,
+            channel=channel,
+            content=content,
+            intent=intent,
+            order_external_id=order_external_id,
+            logistics_status=None,
+            confidence=confidence,
+            automation_decision=decision,
+            status="needs_human" if decision == "human_review" else "pending",
+            created_at="2026-07-14T11:00:00+08:00",
+        )
+        INBOX_ITEMS[platform_message_id] = item
+        return item
+
     async def list_inbox(self) -> tuple[CustomerInboxItem, ...]:
         return tuple(INBOX_ITEMS.values())
 
@@ -197,30 +228,14 @@ class MemoryCustomerAgentRepository(CustomerAgentRepository):
         if message is None:
             return None
 
-        if message.automation_decision == "human_review":
-            return DraftReply(
-                message_id=message_id,
-                content="这个问题涉及退款、赔偿或投诉，需要商家确认后再回复。",
-                confidence=message.confidence,
-                automation_decision="human_review",
-                reason="命中高风险售后规则，禁止自动承诺金额或结果。",
-                required_human_review=True,
-            )
-
-        if message.intent == "logistics":
-            content = f"您好，您的订单 {message.order_external_id} 当前状态是：{message.logistics_status}。我会继续帮您关注物流更新。"
-        elif message.intent == "order":
-            content = f"您好，您的订单 {message.order_external_id} 已查询到，我们会按订单状态继续为您跟进。"
-        else:
-            content = "您好，这款商品当前可以正常咨询和下单。具体尺码库存我会按页面实时库存为您确认。"
-
-        return DraftReply(
+        return build_customer_draft_reply(
             message_id=message_id,
-            content=content,
+            content=message.content,
             confidence=message.confidence,
-            automation_decision="auto_reply",
-            reason="属于 FAQ、订单或物流低风险范围，可自动回复。",
-            required_human_review=False,
+            automation_decision=message.automation_decision,
+            intent=message.intent,
+            order_external_id=message.order_external_id,
+            logistics_status=message.logistics_status,
         )
 
     async def mark_sent(self, message_id: str, final_content: str | None = None) -> CustomerInboxItem | None:
@@ -322,3 +337,16 @@ class MemoryConnectorRepository(ConnectorRepository):
                 next_action="海外平台后续接入，当前优先级低于淘宝、抖音和闲鱼。",
             ),
         )
+
+
+def _classify_customer_message(content: str) -> tuple[str, str, float]:
+    # 真实上线的第一条规则：涉及钱、投诉、退款、赔偿时绝不自动承诺，必须人工确认。
+    if any(keyword in content for keyword in ("退款", "退货", "赔", "补偿", "投诉", "差评", "金额", "便宜点")):
+        return "compensation", "human_review", 0.68
+    if any(keyword in content for keyword in ("物流", "快递", "发货", "到哪", "单号")):
+        return "logistics", "auto_reply", 0.88
+    if any(keyword in content for keyword in ("订单", "下单", "付款", "拍下")):
+        return "order", "auto_reply", 0.86
+    if any(keyword in content for keyword in ("尺码", "颜色", "库存", "有没有", "适合")):
+        return "faq", "auto_reply", 0.84
+    return "unknown", "human_review", 0.55

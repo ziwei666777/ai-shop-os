@@ -94,6 +94,10 @@ class DraftReply:
     automation_decision: AutomationDecision
     reason: str
     required_human_review: bool
+    knowledge_hit: str | None = None
+    memory_hit: str | None = None
+    saved_minutes: int = 0
+    estimated_saving_yuan: int = 0
 
 
 @dataclass(frozen=True)

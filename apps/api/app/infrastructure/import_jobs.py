@@ -20,16 +20,8 @@ STAGING_DIRECTORY = Path(tempfile.gettempdir()) / "ai-shop-os-imports"
 
 
 def ensure_import_runtime() -> None:
-    settings = get_settings()
     if SessionFactory is None:
         raise IntegrationUnavailableError("数据库尚未连接：可以预览文件，但暂时不能正式导入。")
-    if not settings.redis_url:
-        raise IntegrationUnavailableError("Redis 尚未配置：可以预览文件，但暂时不能启动正式导入任务。")
-    try:
-        import redis  # noqa: F401
-        import rq  # noqa: F401
-    except ImportError as error:
-        raise IntegrationUnavailableError("RQ 或 Redis 依赖尚未安装，不能启动正式导入任务。") from error
 
 
 def create_file_import_job(
@@ -78,7 +70,7 @@ def create_file_import_job(
                 "file_sha256": hashlib.sha256(content).hexdigest(),
             },
         )
-    _enqueue(job_id, company_id)
+    _dispatch_job(job_id, company_id)
     return _get_job(company_id, job_id) or {"id": job_id, "created_at": now.isoformat()}
 
 
@@ -111,7 +103,7 @@ def create_sync_jobs(company_id: str, platform: str, connection_id: str, data_ty
                 {"id": job_id, "company_id": company_id, "connection_id": connection_id, "platform": platform, "data_type": data_type},
             )
     for job_id in job_ids:
-        _enqueue(job_id, company_id)
+        _dispatch_job(job_id, company_id)
     return [job for job_id in job_ids if (job := _get_job(company_id, job_id))]
 
 
@@ -325,6 +317,18 @@ def _enqueue(job_id: str, company_id: str) -> None:
         "apps.api.app.infrastructure.import_jobs.run_import_job", job_id, company_id,
         job_timeout="30m", result_ttl=86400, failure_ttl=604800,
     )
+
+
+def _dispatch_job(job_id: str, company_id: str) -> None:
+    settings = get_settings()
+    if settings.redis_url:
+        try:
+            _enqueue(job_id, company_id)
+            return
+        except Exception:
+            # 真实商家试用阶段不能因为队列未启动而卡死导入；队列失败时退回同步处理。
+            pass
+    run_import_job(job_id, company_id)
 
 
 def _get_job(company_id: str, job_id: str) -> dict[str, object] | None:

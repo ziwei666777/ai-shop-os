@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  api-evidence-chain:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Python dependencies
+        run: python -m pip install -r apps/api/requirements.txt
+
+      - name: Python syntax check
+        run: python -m compileall apps/api/app
+
+      - name: Core API tests
+        run: |
+          python -m pytest \
+            apps/api/tests/test_refund_collaboration_workflow.py \
+            apps/api/tests/test_strategy_audit.py \
+            apps/api/tests/test_live_operations_and_savings.py \
+            apps/api/tests/test_daily_operations_job.py \
+            apps/api/tests/test_ceo_daily_report.py \
+            apps/api/tests/test_production_bootstrap.py \
+            apps/api/tests/test_health.py

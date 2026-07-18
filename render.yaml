@@ -1,0 +1,23 @@
+﻿services:
+  - type: web
+    name: ai-commerce-os-api
+    runtime: docker
+    dockerfilePath: apps/api/Dockerfile
+    healthCheckPath: /health/ready
+    envVars:
+      - key: AUTH_REQUIRED
+        value: "true"
+      - key: BACKEND_CORS_ORIGINS
+        value: "https://ai-commerce-os-demo.ybqes.chatgpt.site,https://ai-commerce-os-internal.ybqes.chatgpt.site"
+
+  - type: cron
+    name: ai-commerce-os-daily-operations
+    runtime: docker
+    dockerfilePath: apps/api/Dockerfile
+    schedule: "0 0 * * *"
+    dockerCommand: "python -m apps.api.app.infrastructure.daily_operations_job"
+    envVars:
+      - key: AUTH_REQUIRED
+        value: "true"
+      - key: LIVE_WORKFLOW_LOG_STORAGE
+        value: "postgres"

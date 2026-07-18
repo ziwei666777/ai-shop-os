@@ -6,6 +6,7 @@ sqlalchemy>=2.0.34
 psycopg[binary]>=3.2.1
 pytest>=8.3.0
 httpx>=0.28.0,<1.0.0
+langgraph>=1.2.6,<2.0.0
 redis>=7.3.0,<8.0.0
 rq>=2.10.0,<3.0.0
 cryptography>=49.0.0,<50.0.0

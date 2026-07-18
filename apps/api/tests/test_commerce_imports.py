@@ -1,4 +1,5 @@
 from io import BytesIO
+import json
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -46,6 +47,17 @@ def test_catalog_endpoints_are_paginated_and_platform_filter_isolated() -> None:
     assert body["items"][0]["platform"] == "douyin"
 
 
+def test_commerce_dataset_readiness_uses_catalog_and_message_sources() -> None:
+    response = client.get("/v1/commerce-dataset/readiness")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total_kinds"] == 6
+    assert body["replay_ready_count"] >= 4
+    assert body["estimated_replay_cases"] > 0
+    assert any(item["kind"] == "orders" and item["record_count"] > 0 for item in body["items"])
+
+
 def test_formal_import_is_blocked_without_database_and_redis() -> None:
     response = client.post(
         "/v1/imports/files?file_name=orders.csv&platform=xianyu&data_type=orders&shop_name=test",
@@ -83,6 +95,111 @@ def test_xlsx_preview_reads_values_without_executing_formula() -> None:
     assert response.status_code == 200
     assert response.json()["encoding"] == "xlsx"
     assert response.json()["sample_rows"][0]["实付金额"] == ""
+
+
+def test_json_preview_accepts_array_and_suggests_mapping() -> None:
+    content = json.dumps(
+        [
+            {"order_id": "DY001", "status": "已付款", "total_amount": 199.5, "buyer_name": "周先生"},
+            {"order_id": "DY002", "status": "已发货", "total_amount": 88, "buyer_name": "吴女士"},
+        ],
+        ensure_ascii=False,
+    ).encode()
+
+    response = client.post(
+        "/v1/imports/preview?file_name=douyin-orders.json&platform=douyin&data_type=orders",
+        content=content,
+        headers={"content-type": "application/octet-stream"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["encoding"] == "json"
+    assert body["suggested_mapping"]["external_id"] == "order_id"
+    assert body["suggested_mapping"]["total_amount"] == "total_amount"
+    assert body["sample_rows"][0]["buyer_name"] == "周先生"
+
+
+def test_preview_absorbs_mall_app_order_field_aliases() -> None:
+    content = json.dumps(
+        [
+            {
+                "orderSn": "MALL001",
+                "memberUsername": "old-buyer",
+                "status": 2,
+                "payAmount": 168.5,
+                "paymentTime": "2026-07-13 10:00:00",
+            }
+        ],
+        ensure_ascii=False,
+    ).encode()
+
+    response = client.post(
+        "/v1/imports/preview?file_name=mall-orders.json&platform=taobao&data_type=orders",
+        content=content,
+        headers={"content-type": "application/octet-stream"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["suggested_mapping"]["external_id"] == "orderSn"
+    assert body["suggested_mapping"]["customer_name"] == "memberUsername"
+    assert body["suggested_mapping"]["total_amount"] == "payAmount"
+    assert body["suggested_mapping"]["paid_at"] == "paymentTime"
+
+
+def test_preview_absorbs_mall_app_after_sale_field_aliases() -> None:
+    content = json.dumps(
+        [
+            {
+                "id": 1001,
+                "orderSn": "MALL001",
+                "status": 0,
+                "reason": "商品破损",
+                "description": "包装损坏",
+                "proofPics": "pic-a,pic-b",
+            }
+        ],
+        ensure_ascii=False,
+    ).encode()
+
+    response = client.post(
+        "/v1/imports/preview?file_name=mall-return.json&platform=taobao&data_type=after_sales",
+        content=content,
+        headers={"content-type": "application/octet-stream"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["suggested_mapping"]["external_id"] == "id"
+    assert body["suggested_mapping"]["order_external_id"] == "orderSn"
+    assert body["suggested_mapping"]["reason"] == "reason"
+
+
+def test_json_preview_accepts_wrapped_rows() -> None:
+    content = json.dumps({"rows": [{"customer_id": "C001", "name": "老客户", "tags": ["高价值", "复购"]}]}, ensure_ascii=False).encode()
+
+    response = client.post(
+        "/v1/imports/preview?file_name=customers.json&platform=taobao&data_type=customers",
+        content=content,
+        headers={"content-type": "application/octet-stream"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["headers"] == ["customer_id", "name", "tags"]
+    assert body["sample_rows"][0]["tags"] == '["高价值","复购"]'
+
+
+def test_json_preview_rejects_non_object_rows() -> None:
+    response = client.post(
+        "/v1/imports/preview?file_name=orders.json&platform=xianyu&data_type=orders",
+        content=b'["bad-row"]',
+        headers={"content-type": "application/octet-stream"},
+    )
+
+    assert response.status_code == 400
+    assert "JSON" in response.json()["detail"]
 
 
 def test_official_order_payload_is_normalized_without_address_copy() -> None:

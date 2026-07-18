@@ -5,6 +5,7 @@ import httpx
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 
 from apps.api.app.infrastructure.commerce_catalog import list_catalog
+from apps.api.app.infrastructure.commerce_dataset_readiness import get_commerce_dataset_readiness
 from apps.api.app.infrastructure.import_file_parser import ImportFileError, parse_import_preview
 from apps.api.app.infrastructure.import_jobs import (
     create_file_import_job,
@@ -17,6 +18,7 @@ from apps.api.app.infrastructure.platform_security import IntegrationUnavailable
 from apps.api.app.interfaces.http.auth import CompanyContext, require_company_context
 from apps.api.app.interfaces.http.commerce_schemas import (
     CatalogPageResponse,
+    CommerceDatasetReadinessResponse,
     DataType,
     ImportJobResponse,
     ImportPreviewResponse,
@@ -120,6 +122,12 @@ async def import_job(job_id: str, context: CompanyContext = Depends(require_comp
     if job is None:
         raise HTTPException(status_code=404, detail="导入任务不存在。")
     return ImportJobResponse.model_validate(job)
+
+
+@router.get("/commerce-dataset/readiness", response_model=CommerceDatasetReadinessResponse)
+async def commerce_dataset_readiness(context: CompanyContext = Depends(require_company_context)) -> CommerceDatasetReadinessResponse:
+    summary = get_commerce_dataset_readiness(context.company_id)
+    return CommerceDatasetReadinessResponse.model_validate(summary, from_attributes=True)
 
 
 @router.get("/orders", response_model=CatalogPageResponse)
