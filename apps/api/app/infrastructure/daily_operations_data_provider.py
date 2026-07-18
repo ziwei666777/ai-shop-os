@@ -99,9 +99,9 @@ def load_daily_operations_source_data(session_provider: SessionProvider, company
             warnings=("还没有可用于每日运营的商品或订单数据。",),
         )
 
-    pre_live = _build_pre_live_payload(products) if product_count else None
+    pre_live = _build_pre_live_payload(products, company_id) if product_count else None
     live_metrics = latest_live_metric_payload(company_id)
-    post_live = _build_post_live_payload(order_summary, after_sale_summary, products) if order_count else None
+    post_live = _build_post_live_payload(order_summary, after_sale_summary, products, company_id) if order_count else None
     warnings: list[str] = []
     if product_count == 0:
         warnings.append("缺少商品数据，无法执行开播前库存和价格检查。")
@@ -122,7 +122,7 @@ def load_daily_operations_source_data(session_provider: SessionProvider, company
     )
 
 
-def _build_pre_live_payload(products) -> dict:
+def _build_pre_live_payload(products, company_id: str) -> dict:
     return {
         "products": tuple(
             {
@@ -135,13 +135,19 @@ def _build_pre_live_payload(products) -> dict:
             for row in products
         ),
         "coupons": (),
+        "evidence_source": {
+            "source_type": "postgres",
+            "tables": ("products",),
+            "company_id": company_id,
+            "record_count": len(products),
+        },
         "script_text": "今日直播话术需按真实商品卖点讲解，不承诺绝对效果，不使用极限词。",
         "gift_ready": False,
         "product_order_ready": len(products) >= 3,
     }
 
 
-def _build_post_live_payload(order_summary, after_sale_summary, products) -> dict:
+def _build_post_live_payload(order_summary, after_sale_summary, products, company_id: str) -> dict:
     order_count = int(order_summary["order_count"] or 0)
     sales_amount = float(order_summary["sales_amount"] or 0)
     refund_count = int(after_sale_summary["refund_count"] or 0)
@@ -155,6 +161,14 @@ def _build_post_live_payload(order_summary, after_sale_summary, products) -> dic
         "top_product_title": top_product_title,
         "negative_comment_count": complaint_count,
         "host_script_score": 78,
+        "evidence_source": {
+            "source_type": "postgres",
+            "tables": ("orders", "after_sale_cases"),
+            "company_id": company_id,
+            "lookback_days": 30,
+            "order_count": order_count,
+            "after_sale_count": int(after_sale_summary["after_sale_count"] or 0),
+        },
     }
 
 

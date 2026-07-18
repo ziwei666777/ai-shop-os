@@ -54,10 +54,24 @@ def test_daily_operations_source_builds_real_workflow_payloads_from_database_row
     assert source.pre_live is not None
     assert source.pre_live["products"][0]["title"] == "真实主推商品"
     assert source.pre_live["products"][0]["live_price"] == 179.1
+    assert source.pre_live["evidence_source"] == {
+        "source_type": "postgres",
+        "tables": ("products",),
+        "company_id": "company-1",
+        "record_count": 1,
+    }
     assert source.post_live is not None
     assert source.post_live["sales_amount_yuan"] == 2388
     assert source.post_live["refund_count"] == 2
     assert source.post_live["negative_comment_count"] == 1
+    assert source.post_live["evidence_source"] == {
+        "source_type": "postgres",
+        "tables": ("orders", "after_sale_cases"),
+        "company_id": "company-1",
+        "lookback_days": 30,
+        "order_count": 12,
+        "after_sale_count": 3,
+    }
 
 
 def test_daily_operations_source_marks_empty_database_without_fake_payload() -> None:
