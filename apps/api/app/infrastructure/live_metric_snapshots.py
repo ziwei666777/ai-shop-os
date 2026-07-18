@@ -33,7 +33,7 @@ class LiveMetricSnapshot:
     abnormal_order_count: int
     source_reference: str
 
-    def to_workflow_payload(self) -> dict[str, int | float]:
+    def to_workflow_payload(self) -> dict[str, object]:
         return {
             "online_users": self.online_users,
             "conversion_rate": self.conversion_rate,
@@ -43,6 +43,13 @@ class LiveMetricSnapshot:
             "product_click_rate": self.product_click_rate,
             "inventory_delta": self.inventory_delta,
             "abnormal_order_count": self.abnormal_order_count,
+            "evidence_source": {
+                "snapshot_id": self.id,
+                "platform": self.platform,
+                "stream_external_id": self.stream_external_id,
+                "observed_at": self.observed_at,
+                "source_reference": self.source_reference,
+            },
         }
 
 
@@ -159,7 +166,7 @@ def record_live_metric_snapshot(company_id: str, payload: dict[str, object]) -> 
     return _repository.record(company_id, payload)
 
 
-def latest_live_metric_payload(company_id: str) -> dict[str, int | float] | None:
+def latest_live_metric_payload(company_id: str) -> dict[str, object] | None:
     snapshot = _repository.latest(company_id)
     return snapshot.to_workflow_payload() if snapshot else None
 

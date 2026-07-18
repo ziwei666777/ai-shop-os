@@ -113,3 +113,9 @@ def test_daily_operations_source_reads_latest_live_metric_snapshot() -> None:
     assert source.live_metrics is not None
     assert source.live_metrics["online_users"] == 560
     assert source.live_metrics["abnormal_order_count"] == 1
+    evidence = source.live_metrics["evidence_source"]
+    assert evidence["platform"] == "taobao"
+    assert evidence["stream_external_id"] == "taobao-live-1"
+    assert evidence["observed_at"] == "2026-07-18T08:00:00+00:00"
+    assert evidence["source_reference"] == "taobao-live-api"
+    assert evidence["snapshot_id"].startswith("live-metric-")

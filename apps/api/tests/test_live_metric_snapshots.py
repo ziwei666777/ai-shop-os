@@ -51,7 +51,8 @@ def test_metric_snapshot_bridge_endpoint_records_latest_live_metrics() -> None:
     assert body["platform"] == "douyin"
     assert body["online_users"] == 800
     assert body["source_reference"] == "douyin-open-platform:room-1001"
-    assert latest_live_metric_payload("00000000-0000-0000-0000-000000000001") == {
+    latest = latest_live_metric_payload("00000000-0000-0000-0000-000000000001")
+    assert latest == {
         "online_users": 800,
         "conversion_rate": 0.12,
         "retention_rate": 0.38,
@@ -60,6 +61,13 @@ def test_metric_snapshot_bridge_endpoint_records_latest_live_metrics() -> None:
         "product_click_rate": 0.16,
         "inventory_delta": -32,
         "abnormal_order_count": 2,
+        "evidence_source": {
+            "snapshot_id": body["id"],
+            "platform": "douyin",
+            "stream_external_id": "douyin-live-1001",
+            "observed_at": observed_at.isoformat(),
+            "source_reference": "douyin-open-platform:room-1001",
+        },
     }
 
 
@@ -76,7 +84,27 @@ def test_metric_snapshot_keeps_newest_observation_per_company() -> None:
 
     assert latest is not None
     assert latest["online_users"] == 1200
+    assert latest["evidence_source"]["source_reference"] == "douyin-open-platform:room-1001"
 
+
+def test_daily_workflow_keeps_live_metric_snapshot_evidence() -> None:
+    from apps.api.app.infrastructure.daily_operations_runner import run_daily_operations
+    from apps.api.app.infrastructure.live_workflow_log_store import (
+        InMemoryLiveWorkflowRunRepository,
+        clear_live_workflow_runs_for_test,
+        configure_live_workflow_repository,
+    )
+
+    configure_live_workflow_repository(InMemoryLiveWorkflowRunRepository())
+    clear_live_workflow_runs_for_test()
+    record_live_metric_snapshot("company-live-metrics", _payload(datetime(2026, 7, 18, 8, 0, tzinfo=timezone.utc)))
+
+    run = run_daily_operations(live_metrics=latest_live_metric_payload("company-live-metrics"))
+    live_workflows = [item for item in run.workflow_runs if "evidence_source" in item.input_snapshot]
+
+    assert len(live_workflows) == 1
+    assert live_workflows[0].input_snapshot["evidence_source"]["platform"] == "douyin"
+    assert live_workflows[0].input_snapshot["evidence_source"]["source_reference"] == "douyin-open-platform:room-1001"
 
 def test_metric_snapshot_bridge_key_rejects_invalid_key(monkeypatch) -> None:
     from apps.api.app.infrastructure.config import get_settings
