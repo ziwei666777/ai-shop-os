@@ -58,17 +58,17 @@ def test_ceo_daily_report_gives_boss_money_risk_and_actions() -> None:
     assert any("Savings Engine" in item for item in body["proof_points"])
 
 
-def test_ceo_daily_report_uses_live_workflow_runs_as_proof() -> None:
+def test_ceo_daily_report_keeps_untraceable_live_workflow_as_demo() -> None:
     client = TestClient(app)
 
     client.post(
         "/v1/live-operations/pre-live-check",
         json={
             "products": [
-                {"title": "直播主推款", "inventory_count": 70, "safe_stock": 20, "regular_price": 199, "live_price": 129}
+                {"title": "featured product", "inventory_count": 70, "safe_stock": 20, "regular_price": 199, "live_price": 129}
             ],
-            "coupons": [{"name": "直播券", "remaining_count": 120, "expired": False}],
-            "script_text": "今晚讲清楚福利，不承诺绝对效果。",
+            "coupons": [{"name": "live coupon", "remaining_count": 120, "expired": False}],
+            "script_text": "No exaggerated claims.",
             "gift_ready": True,
             "product_order_ready": True,
         },
@@ -78,8 +78,38 @@ def test_ceo_daily_report_uses_live_workflow_runs_as_proof() -> None:
 
     assert response.status_code == 200
     body = response.json()
-    assert any("直播 Workflow 已记录 1 次" in item for item in body["proof_points"])
+    assert body["data_status"] == "demo_estimate"
     assert body["saved_money_today_yuan"] > 0
+
+
+def test_ceo_daily_report_marks_traceable_live_snapshot_as_real_data() -> None:
+    from apps.api.app.infrastructure.daily_operations_runner import run_daily_operations
+
+    run_daily_operations(
+        live_metrics={
+            "online_users": 800,
+            "conversion_rate": 0.12,
+            "retention_rate": 0.38,
+            "comment_count": 93,
+            "like_count": 1800,
+            "product_click_rate": 0.16,
+            "inventory_delta": -32,
+            "abnormal_order_count": 2,
+            "evidence_source": {
+                "snapshot_id": "live-metric-1001",
+                "platform": "douyin",
+                "stream_external_id": "douyin-live-1001",
+                "observed_at": "2026-07-18T08:00:00+00:00",
+                "source_reference": "douyin-open-platform:room-1001",
+            },
+        }
+    )
+
+    response = TestClient(app).get("/v1/ceo/daily-report")
+
+    assert response.status_code == 200
+    assert response.json()["data_status"] == "real_workflow_logs"
+
 
 def test_ceo_daily_report_shows_after_sale_decision_cost_and_warehouse_notice() -> None:
     client = TestClient(app)

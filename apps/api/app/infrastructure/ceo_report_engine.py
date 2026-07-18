@@ -18,13 +18,15 @@ def get_ceo_daily_report() -> CeoDailyReport:
     after_sale_decisions = summarize_after_sale_decision_outcomes()
     live = get_live_operation_summary()
     runs = list_live_workflow_runs(limit=20)
-    has_real_workflow_logs = bool(runs)
+    traceable_runs = tuple(run for run in runs if _has_traceable_merchant_evidence(run.input_snapshot))
+    traceable_workflow_count = len(traceable_runs)
+    has_real_workflow_logs = bool(traceable_runs)
     data_status = "real_workflow_logs" if has_real_workflow_logs else "demo_estimate"
     data_status_label = "真实 Workflow 数据" if has_real_workflow_logs else "演示估算数据"
     data_status_reason = (
-        "已读取直播 Workflow 运行记录，节省金额来自实际执行日志。"
+        f"已读取 {traceable_workflow_count} 次带可追溯商家来源的直播 Workflow 运行记录，节省金额来自实际执行日志。"
         if has_real_workflow_logs
-        else "当前还没有持久化直播 Workflow 运行记录，页面用于试用演示和接入前校准。"
+        else "当前还没有带可追溯商家来源的直播 Workflow 运行记录，页面用于试用演示和接入前校准。"
     )
     high_risk_count = sum(1 for alert in live.alerts if alert.priority == "high")
     medium_risk_count = sum(1 for alert in live.alerts if alert.priority == "medium")
@@ -51,7 +53,7 @@ def get_ceo_daily_report() -> CeoDailyReport:
     proof_points = (
         f"Savings Engine 今日记录节省 {savings.today_saved_minutes} 分钟，约 {savings.today_saved_yuan} 元。",
         f"按当前节奏，预计月节省 {savings.projected_monthly_saving_yuan} 元，年度 ROI {savings.annual_roi_percent}%。",
-        f"直播 Workflow 已记录 {len(runs)} 次真实运行；没有运行时使用保守估算。",
+        f"直播 Workflow 已记录 {len(runs)} 次运行，其中 {traceable_workflow_count} 次附带可追溯商家来源。",
         data_status_reason,
         *_after_sale_decision_proof_points(after_sale_decisions),
     )
@@ -79,6 +81,17 @@ def get_ceo_daily_report() -> CeoDailyReport:
         ai_employee_notes=ai_notes,
         proof_points=proof_points,
     )
+
+
+def _has_traceable_merchant_evidence(input_snapshot: dict) -> bool:
+    evidence = input_snapshot.get("evidence_source")
+    if not isinstance(evidence, dict):
+        return False
+    if evidence.get("source_type") == "postgres":
+        return bool(evidence.get("tables"))
+    return bool(evidence.get("snapshot_id") and evidence.get("source_reference"))
+
+
 def _after_sale_decision_risks(after_sale_decisions: dict[str, int | str]) -> tuple[CeoReportRisk, ...]:
     failed_count = int(after_sale_decisions["warehouse_notification_failed_count"])
     if not failed_count:
